@@ -1,0 +1,288 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "peer_service.proto",
+    "version": "1.0"
+  },
+  "tags": [
+    {
+      "name": "PeerService"
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/peers": {
+      "get": {
+        "summary": "Get peers",
+        "description": "Get peers from the server.",
+        "operationId": "PeerService_GetPeers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetPeersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Peers"
+        ]
+      },
+      "post": {
+        "summary": "Add a peer",
+        "description": "Add a peer to the server.",
+        "operationId": "PeerService_AddPeer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddPeerResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AddPeerRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      }
+    },
+    "/api/peers/{publicKey}": {
+      "get": {
+        "summary": "Get a peer by public key",
+        "description": "Get a peer by public key from the server.",
+        "operationId": "PeerService_GetPeer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Peer"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "publicKey",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      },
+      "delete": {
+        "summary": "Remove a peer by public key",
+        "description": "Remove a peer by public key from the server.",
+        "operationId": "PeerService_RemovePeer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RemovePeerResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "publicKey",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      },
+      "put": {
+        "summary": "Update a peer by public key",
+        "description": "Update a peer by public key on the server.",
+        "operationId": "PeerService_UpdatePeer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdatePeerResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "publicKey",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AddPeerRequest": {
+      "type": "object"
+    },
+    "v1AddPeerResponse": {
+      "type": "object"
+    },
+    "v1GetPeersResponse": {
+      "type": "object",
+      "properties": {
+        "peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Peer"
+          }
+        }
+      }
+    },
+    "v1Peer": {
+      "type": "object",
+      "properties": {
+        "publicKey": {
+          "type": "string"
+        },
+        "hasPresharedKey": {
+          "type": "boolean"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "persistentKeepAlive": {
+          "type": "string"
+        },
+        "lastHandshake": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "receiveBytes": {
+          "type": "string",
+          "format": "int64"
+        },
+        "transmitBytes": {
+          "type": "string",
+          "format": "int64"
+        },
+        "allowedIps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "protocolVersion": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1RemovePeerResponse": {
+      "type": "object"
+    },
+    "v1UpdatePeerResponse": {
+      "type": "object"
+    }
+  },
+  "externalDocs": {
+    "description": "gRPC+HTTP server for managing wireguard clients",
+    "url": "https://github.com/AZhur771/wg-grpc-api"
+  }
+}

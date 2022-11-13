@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+import "google/api/annotations.proto";
+
+option go_package = "./;peerpb";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    version: "1.0";
+  };
+  external_docs: {
+    url: "https://github.com/AZhur771/wg-grpc-api";
+    description: "gRPC+HTTP server for managing wireguard clients";
+  }
+  schemes: HTTP;
+};
+
+service PeerService {
+  rpc AddPeer(AddPeerRequest) returns (AddPeerResponse) {
+    option (google.api.http) = {
+      post: "/api/peers"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Add a peer"
+      description: "Add a peer to the server."
+      tags: "Peers"
+    };
+  };
+
+  rpc RemovePeer(RemovePeerRequest) returns (RemovePeerResponse) {
+    option (google.api.http) = {
+      delete: "/api/peers/{public_key}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Remove a peer by public key"
+      description: "Remove a peer by public key from the server."
+      tags: "Peers"
+    };
+  };
+
+  rpc UpdatePeer(UpdatePeerRequest) returns (UpdatePeerResponse) {
+    option (google.api.http) = {
+      put: "/api/peers/{public_key}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update a peer by public key"
+      description: "Update a peer by public key on the server."
+      tags: "Peers"
+    };
+  };
+
+  rpc GetPeer(GetPeerRequest) returns (Peer) {
+    option (google.api.http) = {
+      get: "/api/peers/{public_key}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a peer by public key"
+      description: "Get a peer by public key from the server."
+      tags: "Peers"
+    };
+  };
+
+  rpc GetPeers(GetPeersRequest) returns (GetPeersResponse) {
+    option (google.api.http) = {
+      get: "/api/peers"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get peers"
+      description: "Get peers from the server."
+      tags: "Peers"
+    };
+  };
+}
+
+message Peer {
+  string public_key = 1;
+  bool has_preshared_key = 2;
+  string endpoint = 3;
+  string persistent_keep_alive = 4;
+  google.protobuf.Timestamp last_handshake = 5;
+  int64 receive_bytes = 6;
+  int64 transmit_bytes = 7;
+  repeated string allowed_ips = 8;
+  uint32 protocol_version = 9;
+  bool is_enabled = 10;
+  bool is_active = 11;
+}
+
+message AddPeerRequest {
+}
+
+message AddPeerResponse {
+}
+
+message RemovePeerRequest {
+  string public_key = 1;
+}
+
+message RemovePeerResponse {
+}
+
+message UpdatePeerRequest {
+  string public_key = 1;
+}
+
+message UpdatePeerResponse {
+}
+
+message GetPeerRequest {
+  string public_key = 1;
+}
+
+message GetPeersRequest {
+}
+
+message GetPeersResponse {
+  repeated Peer peers = 1;
+}
