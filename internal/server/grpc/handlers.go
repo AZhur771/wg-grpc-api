@@ -2,6 +2,7 @@ package grpcserver
 
 import (
 	"context"
+
 	peerpb "github.com/AZhur771/wg-grpc-api/api/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -4,20 +4,19 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	grpcclient "github.com/AZhur771/wg-grpc-api/internal/client/grpc"
-	grpcserver "github.com/AZhur771/wg-grpc-api/internal/server/grpc"
-	httpserver "github.com/AZhur771/wg-grpc-api/internal/server/http"
-	"google.golang.org/grpc"
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
-	"github.com/AZhur771/wg-grpc-api/internal/config"
+	grpcclient "github.com/AZhur771/wg-grpc-api/internal/client/grpc"
+	grpcserver "github.com/AZhur771/wg-grpc-api/internal/server/grpc"
+	restserver "github.com/AZhur771/wg-grpc-api/internal/server/http"
+	"github.com/caarlos0/env/v6"
+	"go.uber.org/zap"
 )
-
-var configFile string
 
 var (
 	release   = "UNKNOWN"
@@ -25,14 +24,28 @@ var (
 	gitHash   = "UNKNOWN"
 )
 
-func init() {
-	flag.StringVar(&configFile, "config", "/etc/wgapi/config.yaml", "Path to configuration file")
+type config struct {
+	Host          string        `env:"HOST" envDefault:"localhost"`
+	Port          int           `env:"PORT" envDefault:"3000"`
+	GatewayPort   int           `env:"GATEWAY_PORT" envDefault:"3001"`
+	EnableSwagger bool          `env:"SWAGGER"`
+	IsProduction  bool          `env:"PRODUCTION"`
+	Timeout       time.Duration `env:"TIMEOUT" envDefault:"3000s"`
+	PeerFolder    string        `env:"PEER_FOLDER" envDefault:"${HOME}/wg_peers" envExpand:"true"`
 }
 
-func logErrorAndExit(msg string, err error) {
+func logErrorAndExit(err error) {
 	if err != nil {
-		log.Fatalf(msg, err)
+		log.Fatal(err)
 	}
+}
+
+func initializeLogger(isProd bool) (*zap.Logger, error) {
+	if isProd {
+		return zap.NewProduction()
+	}
+
+	return zap.NewDevelopment()
 }
 
 func main() {
@@ -43,7 +56,15 @@ func main() {
 		return
 	}
 
-	cfg, err := config.ParseConfig(configFile)
+	cfg := config{}
+	err := env.Parse(&cfg, env.Options{
+		Prefix: "WG_GRPC_API_",
+	})
+	logErrorAndExit(err)
+
+	logger, err := initializeLogger(cfg.IsProduction)
+	logErrorAndExit(err)
+	defer logger.Sync() // flush logger
 
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
@@ -53,55 +74,70 @@ func main() {
 	)
 	defer cancel()
 
-	grpcSrv, err := grpcserver.NewServer(ctx, cfg.Server.Host, cfg.Server.Port, grpc.NewServer())
-	logErrorAndExit("failed to create grpc server: %s", err)
+	grpcSrv, err := grpcserver.NewServer(
+		ctx,
+		logger,
+		cfg.Host,
+		cfg.Port,
+	)
+	logErrorAndExit(err)
 
-	var httpSrv *httpserver.ServerImpl
+	clientConn, err := grpcclient.NewClientConn(
+		ctx,
+		cfg.Host,
+		cfg.Port,
+	)
+	logErrorAndExit(err)
+
+	httpSrv, err := restserver.NewServer(
+		ctx,
+		logger,
+		clientConn,
+		cfg.Host,
+		cfg.GatewayPort,
+		cfg.EnableSwagger,
+	)
+	logErrorAndExit(err)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	go func() {
+		defer wg.Done()
+		log.Println("grpc server is up and running")
 		if err := grpcSrv.Start(); err != nil {
-			// log error
+			logger.Error("failed to start grpc server", zap.Error(err))
 			cancel()
 		}
 	}()
 
-	if cfg.Server.EnableGateway {
-		clientConn, err := grpcclient.NewClientConn(ctx, cfg.Server.Host, cfg.Server.Port)
-		logErrorAndExit("failed to create grpc client conn: %s", err)
+	go func() {
+		defer wg.Done()
+		log.Println("http gateway server is up and running")
+		if cfg.EnableSwagger {
+			log.Printf("swagger docs available at http://%s:%d/swagger-ui\n", cfg.Host, cfg.GatewayPort)
+		}
 
-		httpSrv, err = httpserver.NewServer(
-			ctx,
-			cfg.Server.Host,
-			cfg.Server.GatewayPort,
-			clientConn,
-			cfg.Server.EnableSwagger,
-		)
-		logErrorAndExit("failed to create http gateway server: %s", err)
+		if err := httpSrv.Start(); err != nil {
+			logger.Error("failed to start http gateway server", zap.Error(err))
+			cancel()
+		}
+	}()
 
-		go func() {
-			if err := httpSrv.Start(); err != nil {
-				// log error
-				cancel()
-			}
-		}()
-	}
-
+	// wait for signal to stop servers
 	<-ctx.Done()
 
-	if cfg.Server.EnableGateway {
-		ctx, cancel = context.WithTimeout(
-			context.Background(),
-			time.Duration(cfg.Server.ShutdownTimeout)*time.Millisecond,
-		)
-		defer cancel()
-
-		if err := httpSrv.Stop(ctx); err != nil {
-			// log error
-		}
+	// gracefully stop http gateway server
+	if err := httpSrv.Stop(context.TODO()); err != nil {
+		logger.Error("failed to stop http gateway server", zap.Error(err))
 	}
 
-	// TODO: check that stop methods can be invoked without errors + choose logger
-
+	// gracefully stop grpc server
 	grpcSrv.Stop()
+
+	// wait for all goroutines to stop
+	wg.Wait()
+
+	// exit
 	os.Exit(1)
 }

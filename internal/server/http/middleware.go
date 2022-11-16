@@ -1,10 +1,11 @@
-package httpserver
+package restserver
 
 import (
-	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type responseObserver struct {
@@ -32,7 +33,7 @@ func (o *responseObserver) WriteHeader(code int) {
 	o.status = code
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
+func loggingMiddleware(next http.Handler, logger *zap.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestAccepted := time.Now()
 		o := &responseObserver{ResponseWriter: w}
@@ -42,9 +43,39 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		if i := strings.LastIndex(addr, ":"); i != -1 {
 			addr = addr[:i]
 		}
-		log.Printf(
-			"%s - %s - %s - %s - %d - %s - %s",
-			addr, r.Method, r.RequestURI, r.Proto, o.status, latency, r.UserAgent(),
+		logger.Info(
+			"HTTP request",
+			zap.String("address", addr),
+			zap.String("method", r.Method),
+			zap.String("URI", r.RequestURI),
+			zap.String("protocol", r.Proto),
+			zap.Int("status", o.status),
+			zap.Duration("latency", latency),
 		)
 	})
+}
+
+func authTokenMiddleware(tokens ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Token "))
+
+			if !stringInSlice(token, tokens) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func stringInSlice(s string, vv []string) bool {
+	for _, v := range vv {
+		if v == s {
+			return true
+		}
+	}
+
+	return false
 }

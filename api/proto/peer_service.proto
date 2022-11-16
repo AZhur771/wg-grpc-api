@@ -78,6 +78,28 @@ service PeerService {
       tags: "Peers"
     };
   };
+
+  rpc EnablePeer(EnablePeerRequest) returns (EnablePeerResponse) {
+    option (google.api.http) = {
+      post: "/api/peers/{public_key}/enable"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Enable a peer by public key"
+      description: "Enable a peer by public key from the server."
+      tags: "Peers"
+    };
+  };
+
+  rpc DisablePeer(DisablePeerRequest) returns (DisablePeerResponse) {
+    option (google.api.http) = {
+      post: "/api/peers/{public_key}/disable"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Disable a peer by public key"
+      description: "Disable a peer by public key from the server."
+      tags: "Peers"
+    };
+  };
 }
 
 message Peer {
@@ -123,4 +145,18 @@ message GetPeersRequest {
 
 message GetPeersResponse {
   repeated Peer peers = 1;
+}
+
+message EnablePeerRequest {
+  string public_key = 1;
+}
+
+message EnablePeerResponse {
+}
+
+message DisablePeerRequest {
+  string public_key = 1;
+}
+
+message DisablePeerResponse {
 }

@@ -27,6 +27,8 @@ type PeerServiceClient interface {
 	UpdatePeer(ctx context.Context, in *UpdatePeerRequest, opts ...grpc.CallOption) (*UpdatePeerResponse, error)
 	GetPeer(ctx context.Context, in *GetPeerRequest, opts ...grpc.CallOption) (*Peer, error)
 	GetPeers(ctx context.Context, in *GetPeersRequest, opts ...grpc.CallOption) (*GetPeersResponse, error)
+	EnablePeer(ctx context.Context, in *EnablePeerRequest, opts ...grpc.CallOption) (*EnablePeerResponse, error)
+	DisablePeer(ctx context.Context, in *DisablePeerRequest, opts ...grpc.CallOption) (*DisablePeerResponse, error)
 }
 
 type peerServiceClient struct {
@@ -82,6 +84,24 @@ func (c *peerServiceClient) GetPeers(ctx context.Context, in *GetPeersRequest, o
 	return out, nil
 }
 
+func (c *peerServiceClient) EnablePeer(ctx context.Context, in *EnablePeerRequest, opts ...grpc.CallOption) (*EnablePeerResponse, error) {
+	out := new(EnablePeerResponse)
+	err := c.cc.Invoke(ctx, "/api.v1.PeerService/EnablePeer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *peerServiceClient) DisablePeer(ctx context.Context, in *DisablePeerRequest, opts ...grpc.CallOption) (*DisablePeerResponse, error) {
+	out := new(DisablePeerResponse)
+	err := c.cc.Invoke(ctx, "/api.v1.PeerService/DisablePeer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PeerServiceServer is the server API for PeerService service.
 // All implementations must embed UnimplementedPeerServiceServer
 // for forward compatibility
@@ -91,6 +111,8 @@ type PeerServiceServer interface {
 	UpdatePeer(context.Context, *UpdatePeerRequest) (*UpdatePeerResponse, error)
 	GetPeer(context.Context, *GetPeerRequest) (*Peer, error)
 	GetPeers(context.Context, *GetPeersRequest) (*GetPeersResponse, error)
+	EnablePeer(context.Context, *EnablePeerRequest) (*EnablePeerResponse, error)
+	DisablePeer(context.Context, *DisablePeerRequest) (*DisablePeerResponse, error)
 	mustEmbedUnimplementedPeerServiceServer()
 }
 
@@ -112,6 +134,12 @@ func (UnimplementedPeerServiceServer) GetPeer(context.Context, *GetPeerRequest) 
 }
 func (UnimplementedPeerServiceServer) GetPeers(context.Context, *GetPeersRequest) (*GetPeersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPeers not implemented")
+}
+func (UnimplementedPeerServiceServer) EnablePeer(context.Context, *EnablePeerRequest) (*EnablePeerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnablePeer not implemented")
+}
+func (UnimplementedPeerServiceServer) DisablePeer(context.Context, *DisablePeerRequest) (*DisablePeerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisablePeer not implemented")
 }
 func (UnimplementedPeerServiceServer) mustEmbedUnimplementedPeerServiceServer() {}
 
@@ -216,6 +244,42 @@ func _PeerService_GetPeers_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PeerService_EnablePeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnablePeerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PeerServiceServer).EnablePeer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.v1.PeerService/EnablePeer",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PeerServiceServer).EnablePeer(ctx, req.(*EnablePeerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PeerService_DisablePeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisablePeerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PeerServiceServer).DisablePeer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.v1.PeerService/DisablePeer",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PeerServiceServer).DisablePeer(ctx, req.(*DisablePeerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PeerService_ServiceDesc is the grpc.ServiceDesc for PeerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +306,14 @@ var PeerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPeers",
 			Handler:    _PeerService_GetPeers_Handler,
+		},
+		{
+			MethodName: "EnablePeer",
+			Handler:    _PeerService_EnablePeer_Handler,
+		},
+		{
+			MethodName: "DisablePeer",
+			Handler:    _PeerService_DisablePeer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
