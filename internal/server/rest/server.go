@@ -9,16 +9,19 @@ import (
 	"net/http"
 	"time"
 
+	peerpb "github.com/AZhur771/wg-grpc-api/gen"
 	"github.com/AZhur771/wg-grpc-api/third_party"
-	"go.uber.org/zap"
-
-	peerpb "github.com/AZhur771/wg-grpc-api/api/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
-const defaultGatewayPrefix string = "/api/"
-const defaultSwaggerPrefix string = "/swagger-ui/"
+const (
+	defaultGatewayPrefix string = "/api/"
+	defaultSwaggerPrefix string = "/swagger-ui/"
+)
 
 var (
 	readHeaderTimeout = 10 * time.Second
@@ -31,7 +34,7 @@ type ServerImpl struct {
 	gateway *http.Server
 }
 
-// serve swagger ui dist from third_party/openapiv2 folder
+// serve swagger ui dist from third_party/openapiv2 folder.
 func serveSwagger(mux *http.ServeMux) error {
 	mime.AddExtensionType(".svg", "image/svg+xml")
 
@@ -64,33 +67,34 @@ func serveSwagger(mux *http.ServeMux) error {
 }
 
 // NewServer returns new grpc Gateway Server.
-func NewServer(
-	ctx context.Context,
-	logger *zap.Logger,
-	conn *grpc.ClientConn,
-	host string,
-	port int,
-	enableSwagger bool,
-) (*ServerImpl, error) {
+func NewServer(ctx context.Context, logger *zap.Logger, addr, grpcAddr string, swagger bool) (*ServerImpl, error) {
 	mux := http.NewServeMux()
+	gwmux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+		MarshalOptions: protojson.MarshalOptions{
+			EmitUnpopulated: true,
+		},
+		UnmarshalOptions: protojson.UnmarshalOptions{
+			DiscardUnknown: true,
+		},
+	}))
 
-	if enableSwagger {
+	if swagger {
 		if err := serveSwagger(mux); err != nil {
 			logger.Error("failed to serve swagger ui dist", zap.Error(err))
 			return nil, err
 		}
 	}
 
-	gwmux := runtime.NewServeMux()
-	if err := peerpb.RegisterPeerServiceHandler(ctx, gwmux, conn); err != nil {
+	mux.Handle(defaultGatewayPrefix, gwmux)
+
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	if err := peerpb.RegisterPeerServiceHandlerFromEndpoint(ctx, gwmux, grpcAddr, opts); err != nil {
 		logger.Error("failed to register gateway handler", zap.Error(err))
 		return nil, err
 	}
 
-	mux.Handle(fmt.Sprintf("/%s", defaultGatewayPrefix), gwmux)
-
 	gwSrv := &http.Server{
-		Addr:              fmt.Sprintf("%s:%d", host, port),
+		Addr:              addr,
 		Handler:           loggingMiddleware(mux, logger),
 		ReadHeaderTimeout: readHeaderTimeout,
 		WriteTimeout:      writeTimeout,

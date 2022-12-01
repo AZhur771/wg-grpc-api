@@ -1,9 +1,12 @@
 syntax = "proto3";
 
-package api.v1;
+package peer;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/field_mask.proto";
 
 import "google/api/annotations.proto";
 
@@ -33,37 +36,41 @@ service PeerService {
     };
   };
 
-  rpc RemovePeer(RemovePeerRequest) returns (RemovePeerResponse) {
+  rpc RemovePeer(PeerIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/api/peers/{public_key}"
+      delete: "/api/peers/{id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Remove a peer by public key"
-      description: "Remove a peer by public key from the server."
+      summary: "Remove a peer by id"
+      description: "Remove a peer by id from the server."
       tags: "Peers"
     };
   };
 
-  rpc UpdatePeer(UpdatePeerRequest) returns (UpdatePeerResponse) {
+  rpc UpdatePeer(UpdatePeerRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      put: "/api/peers/{public_key}"
-      body: "*"
+      put: "/api/peers/{peer.id}"
+      body: "peer"
+      additional_bindings {
+        patch: "/api/peers/{peer.id}"
+        body: "peer"
+      }
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Update a peer by public key"
-      description: "Update a peer by public key on the server."
+      summary: "Update a peer by id"
+      description: "Update a peer by id on the server."
       tags: "Peers"
     };
   };
 
-  rpc GetPeer(GetPeerRequest) returns (Peer) {
+  rpc GetPeer(PeerIdRequest) returns (Peer) {
     option (google.api.http) = {
-      get: "/api/peers/{public_key}"
+      get: "/api/peers/{id}"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get a peer by public key"
-      description: "Get a peer by public key from the server."
+      summary: "Get a peer by id"
+      description: "Get a peer by id from the server."
       tags: "Peers"
     };
   };
@@ -79,84 +86,95 @@ service PeerService {
     };
   };
 
-  rpc EnablePeer(EnablePeerRequest) returns (EnablePeerResponse) {
+  rpc EnablePeer(PeerIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/api/peers/{public_key}/enable"
+      post: "/api/peers/{id}/enable"
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Enable a peer by public key"
-      description: "Enable a peer by public key from the server."
+      summary: "Enable a peer by id"
+      description: "Enable a peer by id from the server."
       tags: "Peers"
     };
   };
 
-  rpc DisablePeer(DisablePeerRequest) returns (DisablePeerResponse) {
+  rpc DisablePeer(PeerIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/api/peers/{public_key}/disable"
+      post: "/api/peers/{id}/disable"
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Disable a peer by public key"
-      description: "Disable a peer by public key from the server."
+      summary: "Disable a peer by id"
+      description: "Disable a peer by id from the server."
+      tags: "Peers"
+    };
+  };
+
+  rpc DownloadPeerConfig(PeerIdRequest) returns (DownloadPeerConfigResponse) {
+    option (google.api.http) = {
+      get: "/api/peers/{id}/download"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Download peer config by id"
+      description: "Download peer config by id from the server."
       tags: "Peers"
     };
   };
 }
 
 message Peer {
-  string public_key = 1;
-  bool has_preshared_key = 2;
+  string id = 1;
+  string public_key = 2;
   string endpoint = 3;
-  string persistent_keep_alive = 4;
-  google.protobuf.Timestamp last_handshake = 5;
-  int64 receive_bytes = 6;
-  int64 transmit_bytes = 7;
-  repeated string allowed_ips = 8;
-  uint32 protocol_version = 9;
-  bool is_enabled = 10;
-  bool is_active = 11;
+  google.protobuf.Duration persistent_keep_alive = 4;
+  repeated string allowed_ips = 5;
+  uint32 protocol_version = 6;
+  int64 receive_bytes = 7;
+  int64 transmit_bytes = 8;
+  google.protobuf.Timestamp last_handshake = 9;
+  bool has_preshared_key = 10;
+  bool is_enabled = 11;
+  bool is_active = 12;
+  string description = 13;
+}
+
+message PeerIdRequest {
+  string id = 1;
 }
 
 message AddPeerRequest {
+  bool add_preshared_key = 1;
+  google.protobuf.Duration persistent_keep_alive = 2;
+  string description = 3;
 }
 
 message AddPeerResponse {
-}
-
-message RemovePeerRequest {
-  string public_key = 1;
-}
-
-message RemovePeerResponse {
+  string id = 1;
 }
 
 message UpdatePeerRequest {
-  string public_key = 1;
-}
+  message UpdatePeerReq {
+    string id = 1;
+    bool add_preshared_key = 2;
+    google.protobuf.Duration persistent_keep_alive = 3;
+    string description = 4;
+  }
 
-message UpdatePeerResponse {
-}
-
-message GetPeerRequest {
-  string public_key = 1;
+  UpdatePeerReq peer = 1;
+  google.protobuf.FieldMask update_mask = 2;
 }
 
 message GetPeersRequest {
+  int32 skip = 1;
+  int32 limit = 2;
 }
 
 message GetPeersResponse {
   repeated Peer peers = 1;
+  int32 total = 2;
+  bool has_next = 3;
 }
 
-message EnablePeerRequest {
-  string public_key = 1;
-}
-
-message EnablePeerResponse {
-}
-
-message DisablePeerRequest {
-  string public_key = 1;
-}
-
-message DisablePeerResponse {
+message DownloadPeerConfigResponse {
+  bytes config = 1;
 }

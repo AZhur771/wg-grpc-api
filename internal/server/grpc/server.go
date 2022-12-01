@@ -2,24 +2,26 @@ package grpcserver
 
 import (
 	"context"
-	"fmt"
 	"net"
 
-	peerpb "github.com/AZhur771/wg-grpc-api/api/proto"
+	peerpb "github.com/AZhur771/wg-grpc-api/gen"
+	"github.com/AZhur771/wg-grpc-api/internal/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type ServerImpl struct {
-	ctx    context.Context
-	logger *zap.Logger
-	server *grpc.Server
-	lis    net.Listener
+	ctx     context.Context
+	logger  *zap.Logger
+	server  *grpc.Server
+	service service.PeerService
+	lis     net.Listener
 	peerpb.UnimplementedPeerServiceServer
 }
 
-func NewServer(ctx context.Context, logger *zap.Logger, host string, port int) (*ServerImpl, error) {
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
+func NewServer(ctx context.Context, logger *zap.Logger, service service.PeerService, addr string) (*ServerImpl, error) {
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
@@ -27,14 +29,15 @@ func NewServer(ctx context.Context, logger *zap.Logger, host string, port int) (
 	srv := grpc.NewServer(
 		grpc.UnaryInterceptor(getUnaryServerInterceptor(logger)),
 	)
+	reflection.Register(srv)
 
 	srvImpl := &ServerImpl{
-		logger: logger,
-		ctx:    ctx,
-		lis:    lis,
-		server: srv,
+		logger:  logger,
+		service: service,
+		ctx:     ctx,
+		lis:     lis,
+		server:  srv,
 	}
-
 	peerpb.RegisterPeerServiceServer(srv, srvImpl)
 
 	return srvImpl, nil

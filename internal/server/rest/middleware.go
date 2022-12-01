@@ -54,28 +54,3 @@ func loggingMiddleware(next http.Handler, logger *zap.Logger) http.Handler {
 		)
 	})
 }
-
-func authTokenMiddleware(tokens ...string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Token "))
-
-			if !stringInSlice(token, tokens) {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func stringInSlice(s string, vv []string) bool {
-	for _, v := range vv {
-		if v == s {
-			return true
-		}
-	}
-
-	return false
-}

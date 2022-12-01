@@ -28,7 +28,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1GetPeersResponse"
+              "$ref": "#/definitions/peerGetPeersResponse"
             }
           },
           "default": {
@@ -38,6 +38,22 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
         "tags": [
           "Peers"
         ]
@@ -50,7 +66,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1AddPeerResponse"
+              "$ref": "#/definitions/peerAddPeerResponse"
             }
           },
           "default": {
@@ -66,7 +82,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1AddPeerRequest"
+              "$ref": "#/definitions/peerAddPeerRequest"
             }
           }
         ],
@@ -75,16 +91,16 @@
         ]
       }
     },
-    "/api/peers/{publicKey}": {
+    "/api/peers/{id}": {
       "get": {
-        "summary": "Get a peer by public key",
-        "description": "Get a peer by public key from the server.",
+        "summary": "Get a peer by id",
+        "description": "Get a peer by id from the server.",
         "operationId": "PeerService_GetPeer",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1Peer"
+              "$ref": "#/definitions/peerPeer"
             }
           },
           "default": {
@@ -96,7 +112,7 @@
         },
         "parameters": [
           {
-            "name": "publicKey",
+            "name": "id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -107,14 +123,15 @@
         ]
       },
       "delete": {
-        "summary": "Remove a peer by public key",
-        "description": "Remove a peer by public key from the server.",
+        "summary": "Remove a peer by id",
+        "description": "Remove a peer by id from the server.",
         "operationId": "PeerService_RemovePeer",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1RemovePeerResponse"
+              "type": "object",
+              "properties": {}
             }
           },
           "default": {
@@ -126,7 +143,7 @@
         },
         "parameters": [
           {
-            "name": "publicKey",
+            "name": "id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -138,21 +155,194 @@
             "schema": {
               "type": "object"
             }
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      }
+    },
+    "/api/peers/{id}/disable": {
+      "post": {
+        "summary": "Disable a peer by id",
+        "description": "Disable a peer by id from the server.",
+        "operationId": "PeerService_DisablePeer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      }
+    },
+    "/api/peers/{id}/download": {
+      "get": {
+        "summary": "Download peer config by id",
+        "description": "Download peer config by id from the server.",
+        "operationId": "PeerService_DownloadPeerConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/peerDownloadPeerConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      }
+    },
+    "/api/peers/{id}/enable": {
+      "post": {
+        "summary": "Enable a peer by id",
+        "description": "Enable a peer by id from the server.",
+        "operationId": "PeerService_EnablePeer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      }
+    },
+    "/api/peers/{peer.id}": {
+      "put": {
+        "summary": "Update a peer by id",
+        "description": "Update a peer by id on the server.",
+        "operationId": "PeerService_UpdatePeer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "peer.id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "peer",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "addPresharedKey": {
+                  "type": "boolean"
+                },
+                "persistentKeepAlive": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "updateMask",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
           "Peers"
         ]
       },
-      "put": {
-        "summary": "Update a peer by public key",
-        "description": "Update a peer by public key on the server.",
-        "operationId": "PeerService_UpdatePeer",
+      "patch": {
+        "summary": "Update a peer by id",
+        "description": "Update a peer by id on the server.",
+        "operationId": "PeerService_UpdatePeer2",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1UpdatePeerResponse"
+              "type": "object",
+              "properties": {}
             }
           },
           "default": {
@@ -164,81 +354,34 @@
         },
         "parameters": [
           {
-            "name": "publicKey",
+            "name": "peer.id",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "body",
+            "name": "peer",
             "in": "body",
             "required": true,
             "schema": {
-              "type": "object"
-            }
-          }
-        ],
-        "tags": [
-          "Peers"
-        ]
-      }
-    },
-    "/api/peers/{publicKey}/disable": {
-      "post": {
-        "summary": "Disable a peer by public key",
-        "description": "Disable a peer by public key from the server.",
-        "operationId": "PeerService_DisablePeer",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1DisablePeerResponse"
+              "type": "object",
+              "properties": {
+                "addPresharedKey": {
+                  "type": "boolean"
+                },
+                "persistentKeepAlive": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
             }
           },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
           {
-            "name": "publicKey",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Peers"
-        ]
-      }
-    },
-    "/api/peers/{publicKey}/enable": {
-      "post": {
-        "summary": "Enable a peer by public key",
-        "description": "Enable a peer by public key from the server.",
-        "operationId": "PeerService_EnablePeer",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1EnablePeerResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "publicKey",
-            "in": "path",
-            "required": true,
+            "name": "updateMask",
+            "in": "query",
+            "required": false,
             "type": "string"
           }
         ],
@@ -249,6 +392,123 @@
     }
   },
   "definitions": {
+    "UpdatePeerRequestUpdatePeerReq": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "addPresharedKey": {
+          "type": "boolean"
+        },
+        "persistentKeepAlive": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "peerAddPeerRequest": {
+      "type": "object",
+      "properties": {
+        "addPresharedKey": {
+          "type": "boolean"
+        },
+        "persistentKeepAlive": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "peerAddPeerResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "peerDownloadPeerConfigResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "peerGetPeersResponse": {
+      "type": "object",
+      "properties": {
+        "peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/peerPeer"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "hasNext": {
+          "type": "boolean"
+        }
+      }
+    },
+    "peerPeer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "publicKey": {
+          "type": "string"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "persistentKeepAlive": {
+          "type": "string"
+        },
+        "allowedIps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "protocolVersion": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "receiveBytes": {
+          "type": "string",
+          "format": "int64"
+        },
+        "transmitBytes": {
+          "type": "string",
+          "format": "int64"
+        },
+        "lastHandshake": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hasPresharedKey": {
+          "type": "boolean"
+        },
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -275,80 +535,6 @@
           }
         }
       }
-    },
-    "v1AddPeerRequest": {
-      "type": "object"
-    },
-    "v1AddPeerResponse": {
-      "type": "object"
-    },
-    "v1DisablePeerResponse": {
-      "type": "object"
-    },
-    "v1EnablePeerResponse": {
-      "type": "object"
-    },
-    "v1GetPeersResponse": {
-      "type": "object",
-      "properties": {
-        "peers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1Peer"
-          }
-        }
-      }
-    },
-    "v1Peer": {
-      "type": "object",
-      "properties": {
-        "publicKey": {
-          "type": "string"
-        },
-        "hasPresharedKey": {
-          "type": "boolean"
-        },
-        "endpoint": {
-          "type": "string"
-        },
-        "persistentKeepAlive": {
-          "type": "string"
-        },
-        "lastHandshake": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "receiveBytes": {
-          "type": "string",
-          "format": "int64"
-        },
-        "transmitBytes": {
-          "type": "string",
-          "format": "int64"
-        },
-        "allowedIps": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "protocolVersion": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "isEnabled": {
-          "type": "boolean"
-        },
-        "isActive": {
-          "type": "boolean"
-        }
-      }
-    },
-    "v1RemovePeerResponse": {
-      "type": "object"
-    },
-    "v1UpdatePeerResponse": {
-      "type": "object"
     }
   },
   "externalDocs": {

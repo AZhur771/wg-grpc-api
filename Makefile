@@ -4,9 +4,9 @@ GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
 
 generate:
-	protoc --go_out=api/proto/ \
-		  --go-grpc_out=api/proto/ \
-		  --grpc-gateway_out=api/proto/ \
+	protoc --go_out=gen/ \
+		  --go-grpc_out=gen/ \
+		  --grpc-gateway_out=gen/ \
 		  --grpc-gateway_opt=allow_delete_body=true \
 		  --grpc-gateway_opt generate_unbound_methods=true \
   		  --proto_path=third_party/ \
