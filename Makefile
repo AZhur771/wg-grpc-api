@@ -1,4 +1,4 @@
-BIN := "./bin/wgapi"
+BIN := "./bin/wg-grpc-api"
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
@@ -26,5 +26,14 @@ lint: install-lint-deps
 
 go-version:
 	which go && go version
+
+build:
+	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/wg-grpc-api
+
+run: build
+	$(BIN)
+
+test:
+	go test -race ./...
 
 .PHONY: generate protoc-version install-lint-deps lint go-version
