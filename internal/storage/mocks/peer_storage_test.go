@@ -37,10 +37,10 @@ func (m *MockPeerStorage) EXPECT() *MockPeerStorageMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockPeerStorage) Create(ctx context.Context, peer *entity.Peer) (*uuid.UUID, error) {
+func (m *MockPeerStorage) Create(ctx context.Context, peer *entity.PersistedPeer) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, peer)
-	ret0, _ := ret[0].(*uuid.UUID)
+	ret0, _ := ret[0].(uuid.UUID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -52,10 +52,10 @@ func (mr *MockPeerStorageMockRecorder) Create(ctx, peer interface{}) *gomock.Cal
 }
 
 // Delete mocks base method.
-func (m *MockPeerStorage) Delete(ctx context.Context, id uuid.UUID) (*entity.Peer, error) {
+func (m *MockPeerStorage) Delete(ctx context.Context, id uuid.UUID) (*entity.PersistedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
-	ret0, _ := ret[0].(*entity.Peer)
+	ret0, _ := ret[0].(*entity.PersistedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -67,10 +67,10 @@ func (mr *MockPeerStorageMockRecorder) Delete(ctx, id interface{}) *gomock.Call 
 }
 
 // Get mocks base method.
-func (m *MockPeerStorage) Get(ctx context.Context, id uuid.UUID) (*entity.Peer, error) {
+func (m *MockPeerStorage) Get(ctx context.Context, id uuid.UUID) (*entity.PersistedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(*entity.Peer)
+	ret0, _ := ret[0].(*entity.PersistedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +82,10 @@ func (mr *MockPeerStorageMockRecorder) Get(ctx, id interface{}) *gomock.Call {
 }
 
 // GetAll mocks base method.
-func (m *MockPeerStorage) GetAll(ctx context.Context, limit, skip int) ([]*entity.Peer, error) {
+func (m *MockPeerStorage) GetAll(ctx context.Context, limit, skip int) ([]*entity.PersistedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAll", ctx, limit, skip)
-	ret0, _ := ret[0].([]*entity.Peer)
+	ret0, _ := ret[0].([]*entity.PersistedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -96,22 +96,8 @@ func (mr *MockPeerStorageMockRecorder) GetAll(ctx, limit, skip interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockPeerStorage)(nil).GetAll), ctx, limit, skip)
 }
 
-// Sync mocks base method.
-func (m *MockPeerStorage) Sync(ctx context.Context, peerFolder string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Sync", ctx, peerFolder)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Sync indicates an expected call of Sync.
-func (mr *MockPeerStorageMockRecorder) Sync(ctx, peerFolder interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sync", reflect.TypeOf((*MockPeerStorage)(nil).Sync), ctx, peerFolder)
-}
-
 // Update mocks base method.
-func (m *MockPeerStorage) Update(ctx context.Context, id uuid.UUID, peer *entity.Peer) error {
+func (m *MockPeerStorage) Update(ctx context.Context, id uuid.UUID, peer *entity.PersistedPeer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, id, peer)
 	ret0, _ := ret[0].(error)

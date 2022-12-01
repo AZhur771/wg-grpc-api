@@ -6,7 +6,6 @@ package service_test
 
 import (
 	context "context"
-	net "net"
 	reflect "reflect"
 	time "time"
 
@@ -39,18 +38,18 @@ func (m *MockPeerService) EXPECT() *MockPeerServiceMockRecorder {
 }
 
 // Add mocks base method.
-func (m *MockPeerService) Add(ctx context.Context, addPresharedKey bool, mtu int, dns []net.IP, persistentKeepAlive time.Duration) (*uuid.UUID, error) {
+func (m *MockPeerService) Add(ctx context.Context, addPresharedKey bool, persistentKeepAlive time.Duration, description string) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", ctx, addPresharedKey, mtu, dns, persistentKeepAlive)
-	ret0, _ := ret[0].(*uuid.UUID)
+	ret := m.ctrl.Call(m, "Add", ctx, addPresharedKey, persistentKeepAlive, description)
+	ret0, _ := ret[0].(uuid.UUID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockPeerServiceMockRecorder) Add(ctx, addPresharedKey, mtu, dns, persistentKeepAlive interface{}) *gomock.Call {
+func (mr *MockPeerServiceMockRecorder) Add(ctx, addPresharedKey, persistentKeepAlive, description interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockPeerService)(nil).Add), ctx, addPresharedKey, mtu, dns, persistentKeepAlive)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockPeerService)(nil).Add), ctx, addPresharedKey, persistentKeepAlive, description)
 }
 
 // Delete mocks base method.
@@ -65,6 +64,21 @@ func (m *MockPeerService) Delete(ctx context.Context, id uuid.UUID) error {
 func (mr *MockPeerServiceMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockPeerService)(nil).Delete), ctx, id)
+}
+
+// DownloadConfig mocks base method.
+func (m *MockPeerService) DownloadConfig(ctx context.Context, id uuid.UUID) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DownloadConfig", ctx, id)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DownloadConfig indicates an expected call of DownloadConfig.
+func (mr *MockPeerServiceMockRecorder) DownloadConfig(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadConfig", reflect.TypeOf((*MockPeerService)(nil).DownloadConfig), ctx, id)
 }
 
 // Get mocks base method.
@@ -83,10 +97,10 @@ func (mr *MockPeerServiceMockRecorder) Get(ctx, id interface{}) *gomock.Call {
 }
 
 // GetAll mocks base method.
-func (m *MockPeerService) GetAll(ctx context.Context, limit, skip int) ([]*entity.Peer, error) {
+func (m *MockPeerService) GetAll(ctx context.Context, limit, skip int) (*entity.PaginatedPeers, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAll", ctx, limit, skip)
-	ret0, _ := ret[0].([]*entity.Peer)
+	ret0, _ := ret[0].(*entity.PaginatedPeers)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,30 +111,30 @@ func (mr *MockPeerServiceMockRecorder) GetAll(ctx, limit, skip interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockPeerService)(nil).GetAll), ctx, limit, skip)
 }
 
-// Prepare mocks base method.
-func (m *MockPeerService) Prepare(ctx context.Context) error {
+// Setup mocks base method.
+func (m *MockPeerService) Setup(ctx context.Context, deviceName, deviceAddress, deviceEndpoint, peerFolder string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Prepare", ctx)
+	ret := m.ctrl.Call(m, "Setup", ctx, deviceName, deviceAddress, deviceEndpoint, peerFolder)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Prepare indicates an expected call of Prepare.
-func (mr *MockPeerServiceMockRecorder) Prepare(ctx interface{}) *gomock.Call {
+// Setup indicates an expected call of Setup.
+func (mr *MockPeerServiceMockRecorder) Setup(ctx, deviceName, deviceAddress, deviceEndpoint, peerFolder interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prepare", reflect.TypeOf((*MockPeerService)(nil).Prepare), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setup", reflect.TypeOf((*MockPeerService)(nil).Setup), ctx, deviceName, deviceAddress, deviceEndpoint, peerFolder)
 }
 
 // Update mocks base method.
-func (m *MockPeerService) Update(ctx context.Context, id uuid.UUID, addPresharedKey bool, mtu int, dns []net.IP, persistentKeepAlive time.Duration) error {
+func (m *MockPeerService) Update(ctx context.Context, id uuid.UUID, addPresharedKey bool, persistentKeepAlive time.Duration, description string, updateMask []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, addPresharedKey, mtu, dns, persistentKeepAlive)
+	ret := m.ctrl.Call(m, "Update", ctx, id, addPresharedKey, persistentKeepAlive, description, updateMask)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockPeerServiceMockRecorder) Update(ctx, id, addPresharedKey, mtu, dns, persistentKeepAlive interface{}) *gomock.Call {
+func (mr *MockPeerServiceMockRecorder) Update(ctx, id, addPresharedKey, persistentKeepAlive, description, updateMask interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerService)(nil).Update), ctx, id, addPresharedKey, mtu, dns, persistentKeepAlive)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerService)(nil).Update), ctx, id, addPresharedKey, persistentKeepAlive, description, updateMask)
 }
