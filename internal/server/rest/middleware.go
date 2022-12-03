@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"go.uber.org/zap"
 )
 
@@ -33,7 +34,7 @@ func (o *responseObserver) WriteHeader(code int) {
 	o.status = code
 }
 
-func loggingMiddleware(next http.Handler, logger *zap.Logger) http.Handler {
+func loggingMiddleware(next http.Handler, logger app.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestAccepted := time.Now()
 		o := &responseObserver{ResponseWriter: w}

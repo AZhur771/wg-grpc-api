@@ -33,6 +33,8 @@ build:
 run: build
 	$(BIN)
 
+app-version: build
+	$(BIN) version
 test:
 	go test -race ./...
 

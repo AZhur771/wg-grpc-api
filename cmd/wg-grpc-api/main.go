@@ -18,9 +18,9 @@ import (
 	"github.com/AZhur771/wg-grpc-api/internal/service"
 	"github.com/AZhur771/wg-grpc-api/internal/storage"
 	"github.com/AZhur771/wg-grpc-api/pkg/redis"
+	"github.com/AZhur771/wg-grpc-api/pkg/wg"
 	"github.com/caarlos0/env/v6"
 	"go.uber.org/zap"
-	"golang.zx2c4.com/wireguard/wgctrl"
 )
 
 var (
@@ -100,7 +100,7 @@ func main() {
 	rsclient, err := redis.New(ctx, rsAddr, cfg.RedisPassword)
 	logErrorAndExit(err)
 
-	wgclient, err := wgctrl.New()
+	wgclient, err := wg.New(cfg.Device)
 	logErrorAndExit(err)
 
 	peerStorage := storage.NewPeerStorage(logger, rsclient)

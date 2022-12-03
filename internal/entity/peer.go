@@ -71,7 +71,7 @@ type Peer struct {
 	IsEnabled bool
 
 	// IsActive indicates whether peer is currently connected to the vpn server
-	// Peer config is considered active if LastHandshake happened less than two seconds ago
+	// Peer config is considered active if LastHandshake happened less than two minutes ago
 	IsActive bool
 
 	// Short description
@@ -84,7 +84,7 @@ func (p *Peer) PopulateDynamicFields(wgpeer *wgtypes.Peer) *Peer {
 	p.ReceiveBytes = wgpeer.ReceiveBytes
 	p.TransmitBytes = wgpeer.TransmitBytes
 	p.ProtocolVersion = wgpeer.ProtocolVersion
-	p.IsActive = wgpeer.LastHandshakeTime.After(time.Now().Add(-2 * time.Second))
+	p.IsActive = wgpeer.LastHandshakeTime.After(time.Now().Add(-2 * time.Minute))
 
 	return p
 }
@@ -163,12 +163,6 @@ func (p *PersistedPeer) ToPeer() (*Peer, error) {
 		HasPresharedKey:             p.HasPresharedKey,
 		Description:                 p.Description,
 	}, nil
-}
-
-type PaginatedPeers struct {
-	Peers   []*Peer
-	Total   int
-	HasNext bool
 }
 
 // TODO: duplicated code, should be removed.

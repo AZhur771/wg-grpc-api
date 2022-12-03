@@ -4,8 +4,8 @@ services:
     image: redis:7.0.5-alpine
     restart: always
     ports:
-      - '6379:6379'
-    entrypoint: redis-server --save 60 1 --appendonly yes --loglevel warning
+      - '127.0.0.1:6379:6379'
+    entrypoint: redis-server --appendonly yes --loglevel warning
     volumes:
       - redis_data:/data
 

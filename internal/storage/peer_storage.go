@@ -7,22 +7,30 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
 	"github.com/go-redis/redis/v9"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
-type peerStorage struct {
-	logger *zap.Logger
-	rdb    *redis.Client
+type PeerStorage struct {
+	logger app.Logger
+
+	rdb *redis.Client
 }
 
-func (ps peerStorage) generateKey(id string) string {
+func NewPeerStorage(logger app.Logger, rdb *redis.Client) *PeerStorage {
+	return &PeerStorage{
+		logger: logger,
+		rdb:    rdb,
+	}
+}
+
+func (ps PeerStorage) generateKey(id string) string {
 	return "wg:" + id
 }
 
-func (ps peerStorage) Create(ctx context.Context, p *entity.PersistedPeer) (uuid.UUID, error) {
+func (ps PeerStorage) Create(ctx context.Context, p *entity.PersistedPeer) (uuid.UUID, error) {
 	id := uuid.New()
 	p.ID = id.String()
 
@@ -34,7 +42,7 @@ func (ps peerStorage) Create(ctx context.Context, p *entity.PersistedPeer) (uuid
 	return id, ps.rdb.Set(ctx, ps.generateKey(p.ID), v, 0).Err()
 }
 
-func (ps peerStorage) Update(ctx context.Context, id uuid.UUID, p *entity.PersistedPeer) error {
+func (ps PeerStorage) Update(ctx context.Context, id uuid.UUID, p *entity.PersistedPeer) error {
 	p.ID = id.String()
 	v, err := json.Marshal(p)
 	if err != nil {
@@ -44,7 +52,7 @@ func (ps peerStorage) Update(ctx context.Context, id uuid.UUID, p *entity.Persis
 	return ps.rdb.Set(ctx, ps.generateKey(p.ID), v, 0).Err()
 }
 
-func (ps peerStorage) Delete(ctx context.Context, id uuid.UUID) (*entity.PersistedPeer, error) {
+func (ps PeerStorage) Delete(ctx context.Context, id uuid.UUID) (*entity.PersistedPeer, error) {
 	p, err := ps.Get(ctx, id)
 	if err != nil {
 		return nil, err
@@ -57,7 +65,7 @@ func (ps peerStorage) Delete(ctx context.Context, id uuid.UUID) (*entity.Persist
 	return p, nil
 }
 
-func (ps peerStorage) Get(ctx context.Context, id uuid.UUID) (*entity.PersistedPeer, error) {
+func (ps PeerStorage) Get(ctx context.Context, id uuid.UUID) (*entity.PersistedPeer, error) {
 	result, err := ps.rdb.Get(ctx, ps.generateKey(id.String())).Result()
 	if err != nil && errors.Is(err, redis.Nil) {
 		return nil, fmt.Errorf("peer storage: redis error while getting peer with id %s: %w", id, err)
@@ -75,21 +83,22 @@ func (ps peerStorage) Get(ctx context.Context, id uuid.UUID) (*entity.PersistedP
 	return p, nil
 }
 
-func (ps peerStorage) GetAll(ctx context.Context, skip, limit int) ([]*entity.PersistedPeer, error) {
+func (ps PeerStorage) GetAll(ctx context.Context) ([]*entity.PersistedPeer, error) {
 	peers := make([]*entity.PersistedPeer, 0)
 
-	iter := ps.rdb.Scan(ctx, uint64(skip), "wg:*", int64(limit)).Iterator()
+	iter := ps.rdb.Scan(ctx, 0, "wg:*", 0).Iterator()
 	for iter.Next(ctx) {
 		key := iter.Val()
-		id := strings.Replace(key, "wg:", "", 1)
 		result, err := ps.rdb.Get(ctx, key).Result()
 		if err != nil && errors.Is(err, redis.Nil) {
-			return nil, fmt.Errorf("peer storage: redis error while getting peer with id %s: %w", id, err)
+			return nil, fmt.Errorf("peer storage: redis error while getting peer with id %s: %w",
+				strings.Replace(key, "wg:", "", 1), err)
 		}
 
 		p := &entity.PersistedPeer{}
 		if err := json.Unmarshal([]byte(result), p); err != nil {
-			return nil, fmt.Errorf("peer storage: failed to unmarshal peer with id %s: %w", id, err)
+			return nil, fmt.Errorf("peer storage: failed to unmarshal peer with id %s: %w",
+				strings.Replace(key, "wg:", "", 1), err)
 		}
 
 		peers = append(peers, p)
@@ -100,11 +109,4 @@ func (ps peerStorage) GetAll(ctx context.Context, skip, limit int) ([]*entity.Pe
 	}
 
 	return peers, nil
-}
-
-func NewPeerStorage(logger *zap.Logger, rdb *redis.Client) PeerStorage {
-	return &peerStorage{
-		logger: logger,
-		rdb:    rdb,
-	}
 }

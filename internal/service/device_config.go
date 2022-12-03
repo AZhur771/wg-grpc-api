@@ -30,10 +30,3 @@ func (d *deviceConfig) decPeerCount() {
 
 	d.totalPeers--
 }
-
-func (d *deviceConfig) getPeerCount() int {
-	d.RLock()
-	defer d.RUnlock()
-
-	return d.totalPeers
-}

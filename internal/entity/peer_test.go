@@ -1,13 +1,14 @@
 package entity_test
 
 import (
+	"net"
+	"testing"
+	"time"
+
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
-	"net"
-	"testing"
-	"time"
 )
 
 var (

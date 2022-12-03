@@ -5,22 +5,22 @@ import (
 	"net"
 
 	peerpb "github.com/AZhur771/wg-grpc-api/gen"
-	"github.com/AZhur771/wg-grpc-api/internal/service"
-	"go.uber.org/zap"
+	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 type ServerImpl struct {
 	ctx     context.Context
-	logger  *zap.Logger
-	server  *grpc.Server
-	service service.PeerService
-	lis     net.Listener
+	logger  app.Logger
+	service app.PeerService
+
+	server *grpc.Server
+	lis    net.Listener
 	peerpb.UnimplementedPeerServiceServer
 }
 
-func NewServer(ctx context.Context, logger *zap.Logger, service service.PeerService, addr string) (*ServerImpl, error) {
+func NewServer(ctx context.Context, logger app.Logger, service app.PeerService, addr string) (*ServerImpl, error) {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
