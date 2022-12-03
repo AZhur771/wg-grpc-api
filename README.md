@@ -1,3 +1,5 @@
+[![Go](https://github.com/AZhur771/wg-grpc-api/actions/workflows/ci.yaml/badge.svg)](https://github.com/AZhur771/wg-grpc-api/actions/workflows/ci.yaml)
+
 # wg-grpc-api
 
 GRPC API to manage wireguard peers.
