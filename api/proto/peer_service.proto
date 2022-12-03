@@ -51,7 +51,7 @@ service PeerService {
   rpc UpdatePeer(UpdatePeerRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       put: "/api/peers/{peer.id}"
-      body: "peer"
+      body: "*"
       additional_bindings {
         patch: "/api/peers/{peer.id}"
         body: "peer"
@@ -75,7 +75,7 @@ service PeerService {
     };
   };
 
-  rpc GetPeers(GetPeersRequest) returns (GetPeersResponse) {
+  rpc GetPeers(google.protobuf.Empty) returns (GetPeersResponse) {
     option (google.api.http) = {
       get: "/api/peers"
     };
@@ -85,6 +85,8 @@ service PeerService {
       tags: "Peers"
     };
   };
+
+  rpc StreamPeers(google.protobuf.Empty) returns (stream Peer) {};
 
   rpc EnablePeer(PeerIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -112,7 +114,7 @@ service PeerService {
 
   rpc DownloadPeerConfig(PeerIdRequest) returns (DownloadPeerConfigResponse) {
     option (google.api.http) = {
-      get: "/api/peers/{id}/download"
+      get: "/api/peers/{id}/config"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Download peer config by id"
@@ -164,15 +166,8 @@ message UpdatePeerRequest {
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message GetPeersRequest {
-  int32 skip = 1;
-  int32 limit = 2;
-}
-
 message GetPeersResponse {
   repeated Peer peers = 1;
-  int32 total = 2;
-  bool has_next = 3;
 }
 
 message DownloadPeerConfigResponse {

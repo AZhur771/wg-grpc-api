@@ -10,6 +10,7 @@ import (
 	"time"
 
 	peerpb "github.com/AZhur771/wg-grpc-api/gen"
+	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"github.com/AZhur771/wg-grpc-api/third_party"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
@@ -30,7 +31,7 @@ var (
 )
 
 type ServerImpl struct {
-	logger  *zap.Logger
+	logger  app.Logger
 	gateway *http.Server
 }
 
@@ -67,7 +68,7 @@ func serveSwagger(mux *http.ServeMux) error {
 }
 
 // NewServer returns new grpc Gateway Server.
-func NewServer(ctx context.Context, logger *zap.Logger, addr, grpcAddr string, swagger bool) (*ServerImpl, error) {
+func NewServer(ctx context.Context, logger app.Logger, addr, grpcAddr string, swagger bool) (*ServerImpl, error) {
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 		MarshalOptions: protojson.MarshalOptions{

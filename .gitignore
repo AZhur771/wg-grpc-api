@@ -32,3 +32,6 @@ Thumbs.db
 .vscode/
 *.bak
 test_run_script.sh
+
+# generated binary files
+bin/

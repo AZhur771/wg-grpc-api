@@ -9,32 +9,31 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
-	"github.com/AZhur771/wg-grpc-api/internal/storage"
 	tmpl "github.com/AZhur771/wg-grpc-api/internal/template"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
-	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-type peerService struct {
-	logger      *zap.Logger
-	wgclient    *wgctrl.Client
+type PeerService struct {
+	logger   app.Logger
+	wgclient app.Wg
+	storage  app.PeerStorage
+
 	reservedIPs *reservedIPs
 	device      *deviceConfig
-	storage     storage.PeerStorage
 }
 
-func NewPeerService(logger *zap.Logger, wgclient *wgctrl.Client, storage storage.PeerStorage) PeerService {
-	return &peerService{
+func NewPeerService(logger app.Logger, wgclient app.Wg, storage app.PeerStorage) *PeerService {
+	return &PeerService{
 		logger:   logger,
 		wgclient: wgclient,
 		storage:  storage,
 	}
 }
 
-func (ps *peerService) getAvailableIP(ipnet *net.IPNet) (*net.IPNet, error) {
+func (ps *PeerService) getAvailableIP(ipnet *net.IPNet) (*net.IPNet, error) {
 	// this two addresses are not usable
 	broadcastAddr := getBroadcastAddr(ipnet).String()
 	networkAddr := ipnet.IP.String()
@@ -59,16 +58,7 @@ func (ps *peerService) getAvailableIP(ipnet *net.IPNet) (*net.IPNet, error) {
 	return nil, ErrRunOutOfAddresses
 }
 
-func (ps *peerService) configureDevice(peerConfig wgtypes.PeerConfig) error {
-	return ps.wgclient.ConfigureDevice(
-		ps.device.name,
-		wgtypes.Config{
-			Peers: []wgtypes.PeerConfig{peerConfig},
-		},
-	)
-}
-
-func (ps *peerService) Add(
+func (ps *PeerService) Add(
 	ctx context.Context,
 	addPresharedKey bool,
 	persistentKeepAlive time.Duration,
@@ -117,7 +107,7 @@ func (ps *peerService) Add(
 		AllowedIPs:                  peer.AllowedIPs,
 	}
 
-	if err := ps.configureDevice(peerConfig); err != nil {
+	if err := ps.wgclient.ConfigureDevice(peerConfig); err != nil {
 		return id, fmt.Errorf("peer service: failed to configure device: %w", err)
 	}
 
@@ -131,7 +121,7 @@ func (ps *peerService) Add(
 	return id, nil
 }
 
-func (ps *peerService) Update(
+func (ps *PeerService) Update(
 	ctx context.Context,
 	id uuid.UUID,
 	addPresharedKey bool,
@@ -151,7 +141,10 @@ func (ps *peerService) Update(
 
 	var shouldConfigureDev bool
 
+	// TODO: looks like wrong usage of field mask, should be refactored
 	if containsString(updateMask, "add_preshared_key") && addPresharedKey != peer.HasPresharedKey {
+		peer.HasPresharedKey = false
+		peer.PresharedKey = wgtypes.Key{} // non-nil zero value key clears preshared key
 		shouldConfigureDev = true
 	}
 
@@ -172,7 +165,7 @@ func (ps *peerService) Update(
 			UpdateOnly:                  true,
 		}
 
-		if err := ps.configureDevice(peerConfig); err != nil {
+		if err := ps.wgclient.ConfigureDevice(peerConfig); err != nil {
 			return fmt.Errorf("peer service: failed to configure device: %w", err)
 		}
 	}
@@ -180,7 +173,7 @@ func (ps *peerService) Update(
 	return ps.storage.Update(ctx, id, peer.ToPersistedPeer())
 }
 
-func (ps *peerService) Delete(ctx context.Context, id uuid.UUID) error {
+func (ps *PeerService) Delete(ctx context.Context, id uuid.UUID) error {
 	persistedPeer, err := ps.storage.Delete(ctx, id)
 	if err != nil {
 		return err
@@ -200,7 +193,7 @@ func (ps *peerService) Delete(ctx context.Context, id uuid.UUID) error {
 		Remove:    true,
 	}
 
-	if err = ps.configureDevice(peerConfig); err != nil {
+	if err = ps.wgclient.ConfigureDevice(peerConfig); err != nil {
 		return fmt.Errorf("peer service: failed to configure device: %w", err)
 	}
 
@@ -209,12 +202,7 @@ func (ps *peerService) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (ps *peerService) Get(ctx context.Context, id uuid.UUID) (*entity.Peer, error) {
-	device, err := ps.wgclient.Device(ps.device.name)
-	if err != nil {
-		return nil, fmt.Errorf("peer service: failed to get device: %w", err)
-	}
-
+func (ps *PeerService) Get(ctx context.Context, id uuid.UUID) (*entity.Peer, error) {
 	persistedPeer, err := ps.storage.Get(ctx, id)
 	if err != nil {
 		return nil, err
@@ -225,22 +213,25 @@ func (ps *peerService) Get(ctx context.Context, id uuid.UUID) (*entity.Peer, err
 		return nil, err
 	}
 
-	for i, p := range device.Peers {
-		if bytes.Equal(p.PublicKey[:], peer.PublicKey[:]) {
-			return peer.PopulateDynamicFields(&device.Peers[i]), nil
+	if peer.IsEnabled {
+		wgpeer, err := ps.wgclient.GetPeer(peer.PublicKey)
+		if err != nil {
+			return nil, err
 		}
+
+		peer = peer.PopulateDynamicFields(&wgpeer)
 	}
 
 	return peer, nil
 }
 
-func (ps *peerService) GetAll(ctx context.Context, limit, skip int) (*entity.PaginatedPeers, error) {
-	device, err := ps.wgclient.Device(ps.device.name)
+func (ps *PeerService) GetAll(ctx context.Context) ([]*entity.Peer, error) {
+	persistedPeers, err := ps.storage.GetAll(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("peer service: failed to get device: %w", err)
+		return nil, err
 	}
 
-	persistedPeers, err := ps.storage.GetAll(ctx, limit, skip)
+	wgpeers, err := ps.wgclient.GetPeers()
 	if err != nil {
 		return nil, err
 	}
@@ -254,22 +245,22 @@ func (ps *peerService) GetAll(ctx context.Context, limit, skip int) (*entity.Pag
 			return nil, err
 		}
 
-		for i, p := range device.Peers {
-			if bytes.Equal(p.PublicKey[:], peer.PublicKey[:]) {
-				peers = append(peers, peer.PopulateDynamicFields(&device.Peers[i]))
-				break
+		if peer.IsEnabled {
+			for i, p := range wgpeers {
+				if bytes.Equal(p.PublicKey[:], peer.PublicKey[:]) {
+					peer = peer.PopulateDynamicFields(&wgpeers[i])
+					break
+				}
 			}
 		}
+
+		peers = append(peers, peer)
 	}
 
-	return &entity.PaginatedPeers{
-		Peers:   peers,
-		Total:   ps.device.getPeerCount(),
-		HasNext: ps.device.getPeerCount() > len(peers)+limit+skip,
-	}, nil
+	return peers, nil
 }
 
-func (ps *peerService) DownloadConfig(ctx context.Context, id uuid.UUID) ([]byte, error) {
+func (ps *PeerService) DownloadConfig(ctx context.Context, id uuid.UUID) ([]byte, error) {
 	persistedPeer, err := ps.storage.Get(ctx, id)
 	if err != nil {
 		return nil, err
@@ -286,7 +277,7 @@ func (ps *peerService) DownloadConfig(ctx context.Context, id uuid.UUID) ([]byte
 
 	var buf bytes.Buffer
 
-	if err := t.Execute(&buf, tmpl.TmplData{
+	tmplData := tmpl.TmplData{
 		// interface data
 		InterfacePrivateKey: persistedPeer.PrivateKey,
 		InterfaceAddress:    persistedPeer.AllowedIPs,
@@ -299,19 +290,85 @@ func (ps *peerService) DownloadConfig(ctx context.Context, id uuid.UUID) ([]byte
 		PeerEndpoint:        ps.device.endpoint.String(),
 		PeerAllowedIPs:      []string{"0.0.0.0/0"},
 		PersistentKeepalive: int(persistedPeer.PersistentKeepaliveInterval.Seconds()),
-	}); err != nil {
+	}
+
+	if err := t.Execute(&buf, tmplData); err != nil {
 		return nil, err
 	}
+
 	return buf.Bytes(), err
 }
 
-func (ps *peerService) Setup(
+func (ps *PeerService) Enable(ctx context.Context, id uuid.UUID) error {
+	persistedPeer, err := ps.storage.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	peer, err := persistedPeer.ToPeer()
+	if err != nil {
+		return err
+	}
+
+	if !peer.IsEnabled {
+		peer.IsEnabled = true
+		peerConfig := wgtypes.PeerConfig{
+			PublicKey:                   peer.PublicKey,
+			PresharedKey:                &peer.PresharedKey,
+			PersistentKeepaliveInterval: &peer.PersistentKeepaliveInterval,
+			AllowedIPs:                  peer.AllowedIPs,
+			UpdateOnly:                  true,
+		}
+
+		if err = ps.wgclient.ConfigureDevice(peerConfig); err != nil {
+			return fmt.Errorf("peer service: failed to configure device: %w", err)
+		}
+
+		if err := ps.storage.Update(ctx, id, peer.ToPersistedPeer()); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ps *PeerService) Disable(ctx context.Context, id uuid.UUID) error {
+	persistedPeer, err := ps.storage.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	peer, err := persistedPeer.ToPeer()
+	if err != nil {
+		return err
+	}
+
+	if peer.IsEnabled {
+		peer.IsEnabled = false
+		peerConfig := wgtypes.PeerConfig{
+			PublicKey: peer.PublicKey,
+			Remove:    true,
+		}
+
+		if err = ps.wgclient.ConfigureDevice(peerConfig); err != nil {
+			return fmt.Errorf("peer service: failed to configure device: %w", err)
+		}
+
+		if err := ps.storage.Update(ctx, id, peer.ToPersistedPeer()); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ps *PeerService) Setup(
 	ctx context.Context,
 	deviceName, deviceAddress, deviceEndpoint, peerFolder string,
 ) error {
-	device, err := ps.wgclient.Device(deviceName)
+	device, err := ps.wgclient.GetDevice()
 	if err != nil {
-		return fmt.Errorf("peer service: failed to get device: %w", err)
+		return err
 	}
 
 	// extract and persist device ip+net to later get available ips
@@ -330,13 +387,13 @@ func (ps *peerService) Setup(
 		publicKey: device.PublicKey,
 	}
 
-	paginatedPeers, err := ps.GetAll(ctx, 0, 0)
+	peers, err := ps.GetAll(ctx)
 	if err != nil {
 		return err
 	}
 
 	ps.reservedIPs = &reservedIPs{
-		ips: make([]net.IP, 0, len(paginatedPeers.Peers)+1),
+		ips: make([]net.IP, 0, len(peers)+1),
 	}
 
 	// add device ip
@@ -345,7 +402,7 @@ func (ps *peerService) Setup(
 	}
 
 	// add all the peer ips
-	for _, peer := range paginatedPeers.Peers {
+	for _, peer := range peers {
 		ps.device.incPeerCount()
 
 		for _, addr := range peer.AllowedIPs {

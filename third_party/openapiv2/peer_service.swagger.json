@@ -38,22 +38,6 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "skip",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int32"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int32"
-          }
-        ],
         "tags": [
           "Peers"
         ]
@@ -162,6 +146,38 @@
         ]
       }
     },
+    "/api/peers/{id}/config": {
+      "get": {
+        "summary": "Download peer config by id",
+        "description": "Download peer config by id from the server.",
+        "operationId": "PeerService_DownloadPeerConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/peerDownloadPeerConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Peers"
+        ]
+      }
+    },
     "/api/peers/{id}/disable": {
       "post": {
         "summary": "Disable a peer by id",
@@ -196,38 +212,6 @@
             "schema": {
               "type": "object"
             }
-          }
-        ],
-        "tags": [
-          "Peers"
-        ]
-      }
-    },
-    "/api/peers/{id}/download": {
-      "get": {
-        "summary": "Download peer config by id",
-        "description": "Download peer config by id from the server.",
-        "operationId": "PeerService_DownloadPeerConfig",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/peerDownloadPeerConfigResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
           }
         ],
         "tags": [
@@ -304,29 +288,31 @@
             "type": "string"
           },
           {
-            "name": "peer",
+            "name": "body",
             "in": "body",
             "required": true,
             "schema": {
               "type": "object",
               "properties": {
-                "addPresharedKey": {
-                  "type": "boolean"
+                "peer": {
+                  "type": "object",
+                  "properties": {
+                    "addPresharedKey": {
+                      "type": "boolean"
+                    },
+                    "persistentKeepAlive": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
                 },
-                "persistentKeepAlive": {
-                  "type": "string"
-                },
-                "description": {
+                "updateMask": {
                   "type": "string"
                 }
               }
             }
-          },
-          {
-            "name": "updateMask",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -448,13 +434,6 @@
           "items": {
             "$ref": "#/definitions/peerPeer"
           }
-        },
-        "total": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "hasNext": {
-          "type": "boolean"
         }
       }
     },

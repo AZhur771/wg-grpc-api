@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
-func getUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerInterceptor {
+func getUnaryServerInterceptor(logger app.Logger) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
