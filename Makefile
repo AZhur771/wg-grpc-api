@@ -13,7 +13,9 @@ generate:
   		  --proto_path=api/proto/ \
   		  --openapiv2_out=third_party/openapiv2 \
   		  --openapiv2_opt allow_delete_body=true \
-		  api/proto/peer_service.proto
+		  --openapiv2_opt allow_merge=true \
+		  --openapiv2_opt merge_file_name=api \
+		  api/proto/*.proto
 
 protoc-version:
 	which protoc && protoc --version

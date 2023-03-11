@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+import "google/api/annotations.proto";
+
+option go_package = "./;wgpb";
+
+service DeviceService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    description: "Service to configure wireguard device"
+  };
+
+  rpc GetDevice(google.protobuf.Empty) returns (Device) {
+    option (google.api.http) = {
+      get: "/api/device"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get device"
+      description: "Get device from the server."
+      tags: "DeviceService"
+      security: {
+        security_requirement: {
+          key: "ApiKeyAuth";
+          value: {}
+        }
+      }
+    };
+  };
+}
+
+message Device {
+  string name = 1;   
+  string type = 2;
+  string public_key = 3;
+  int32 listen_port = 4;
+  int32 firewall_mark = 5;
+  int32 max_peers_count = 6;
+  int32 current_peers_count = 7;
+  string endpoint = 8;
+  string address = 9;
+}

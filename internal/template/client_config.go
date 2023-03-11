@@ -3,13 +3,13 @@ package template
 type TmplData struct {
 	InterfacePrivateKey string
 	InterfaceAddress    []string
-	InterfaceDNS        []string
+	InterfaceDNS        []string // 9.9.9.9, 149.112.112.112
 	InterfaceMTU        int
 
 	PeerPublicKey       string
 	PeerPresharedKey    string
 	PeerEndpoint        string
-	PeerAllowedIPs      []string
+	PeerAllowedIPs      []string // 0.0.0.0/0
 	PersistentKeepalive int
 }
 

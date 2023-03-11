@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	peerpb "github.com/AZhur771/wg-grpc-api/gen"
+	wgpb "github.com/AZhur771/wg-grpc-api/gen"
 	"github.com/AZhur771/wg-grpc-api/internal/app"
+	"github.com/AZhur771/wg-grpc-api/internal/certs"
 	"github.com/AZhur771/wg-grpc-api/third_party"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
@@ -30,7 +31,7 @@ var (
 	idleTimeout       = 10 * time.Second
 )
 
-type ServerImpl struct {
+type Server struct {
 	logger  app.Logger
 	gateway *http.Server
 }
@@ -67,17 +68,21 @@ func serveSwagger(mux *http.ServeMux) error {
 	return nil
 }
 
-// NewServer returns new grpc Gateway Server.
-func NewServer(ctx context.Context, logger app.Logger, addr, grpcAddr string, swagger bool) (*ServerImpl, error) {
+func New(ctx context.Context, logger app.Logger, addr, grpcAddr string, swagger bool, certPath, keyPath string) (*Server, error) {
 	mux := http.NewServeMux()
-	gwmux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-		MarshalOptions: protojson.MarshalOptions{
-			EmitUnpopulated: true,
-		},
-		UnmarshalOptions: protojson.UnmarshalOptions{
-			DiscardUnknown: true,
-		},
-	}))
+
+	gatewayOptions := []runtime.ServeMuxOption{
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				EmitUnpopulated: true,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
+		}),
+	}
+
+	gwmux := runtime.NewServeMux(gatewayOptions...)
 
 	if swagger {
 		if err := serveSwagger(mux); err != nil {
@@ -88,30 +93,47 @@ func NewServer(ctx context.Context, logger app.Logger, addr, grpcAddr string, sw
 
 	mux.Handle(defaultGatewayPrefix, gwmux)
 
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := peerpb.RegisterPeerServiceHandlerFromEndpoint(ctx, gwmux, grpcAddr, opts); err != nil {
-		logger.Error("failed to register gateway handler", zap.Error(err))
+	opts := make([]grpc.DialOption, 0, 1)
+
+	if certPath != "" || keyPath != "" {
+		tlsCredentials, err := certs.LoadTLSCredentials(certPath, keyPath)
+		if err != nil {
+			return nil, fmt.Errorf("rest gateway server: %w", err)
+		}
+
+		opts = append(opts, grpc.WithTransportCredentials(tlsCredentials))
+	} else {
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+
+	if err := wgpb.RegisterPeerServiceHandlerFromEndpoint(ctx, gwmux, grpcAddr, opts); err != nil {
+		logger.Error("failed to register peer gateway handler", zap.Error(err))
+		return nil, err
+	}
+
+	if err := wgpb.RegisterDeviceServiceHandlerFromEndpoint(ctx, gwmux, grpcAddr, opts); err != nil {
+		logger.Error("failed to register device gateway handler", zap.Error(err))
 		return nil, err
 	}
 
 	gwSrv := &http.Server{
 		Addr:              addr,
-		Handler:           loggingMiddleware(mux, logger),
+		Handler:           mux,
 		ReadHeaderTimeout: readHeaderTimeout,
 		WriteTimeout:      writeTimeout,
 		IdleTimeout:       idleTimeout,
 	}
 
-	return &ServerImpl{
+	return &Server{
 		logger:  logger,
 		gateway: gwSrv,
 	}, nil
 }
 
-func (s *ServerImpl) Start() error {
+func (s *Server) Start() error {
 	return s.gateway.ListenAndServe()
 }
 
-func (s *ServerImpl) Stop(ctx context.Context) error {
+func (s *Server) Stop(ctx context.Context) error {
 	return s.gateway.Shutdown(ctx)
 }

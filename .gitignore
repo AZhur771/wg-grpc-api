@@ -35,3 +35,6 @@ test_run_script.sh
 
 # generated binary files
 bin/
+
+# temp files
+tmp/

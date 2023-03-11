@@ -15,12 +15,12 @@ import (
 
 	grpcserver "github.com/AZhur771/wg-grpc-api/internal/server/grpc"
 	restserver "github.com/AZhur771/wg-grpc-api/internal/server/rest"
-	"github.com/AZhur771/wg-grpc-api/internal/service"
+	deviceservice "github.com/AZhur771/wg-grpc-api/internal/service/device"
+	peerservice "github.com/AZhur771/wg-grpc-api/internal/service/peer"
 	"github.com/AZhur771/wg-grpc-api/internal/storage"
-	"github.com/AZhur771/wg-grpc-api/pkg/redis"
-	"github.com/AZhur771/wg-grpc-api/pkg/wg"
 	"github.com/caarlos0/env/v6"
 	"go.uber.org/zap"
+	"golang.zx2c4.com/wireguard/wgctrl"
 )
 
 var (
@@ -30,20 +30,22 @@ var (
 )
 
 type config struct {
-	IsProduction bool   `env:"PRODUCTION"`
-	Host         string `env:"HOST" envDefault:"localhost"`
-	Port         int    `env:"PORT" envDefault:"3000"`
-	Gateway      bool   `env:"GATEWAY"`
-	GatewayPort  int    `env:"GATEWAY_PORT" envDefault:"3001"`
-	ServeSwagger bool   `env:"SWAGGER"`
-	Device       string `env:"DEVICE" envDefault:"wg0"`
-	Address      string `env:"ADDRESS,required"`
-	Endpoint     string `env:"ENDPOINT,required"`
-	PeerFolder   string `env:"PEER_FOLDER" envDefault:"${HOME}/wg_peers" envExpand:"true"`
+	IsProduction bool     `env:"PRODUCTION"`
+	Host         string   `env:"HOST" envDefault:"localhost"`
+	Port         int      `env:"PORT" envDefault:"3000"`
+	Gateway      bool     `env:"GATEWAY"`
+	GatewayPort  int      `env:"GATEWAY_PORT" envDefault:"3001"`
+	ServeSwagger bool     `env:"SWAGGER"`
+	Device       string   `env:"DEVICE" envDefault:"wg0"`
+	Address      string   `env:"ADDRESS,required"`
+	Endpoint     string   `env:"ENDPOINT,required"`
+	Tokens       []string `env:"TOKENS" envSeparator:","`
 
-	RedisHost     string `env:"REDIS_HOST" envDefault:"localhost"`
-	RedisPort     int    `env:"REDIS_PORT" envDefault:"6379"`
-	RedisPassword string `env:"REDIS_PASSWORD"`
+	ServerCert string `env:"SERVER_CERT"`
+	ServerKey  string `env:"SERVER_KEY"`
+
+	// PeerFolder indicates folder where to store peer configs
+	PeerFolder string `env:"PEER_FOLDER" envDefault:"${HOME}/wg_peers" envExpand:"true"`
 }
 
 func logErrorAndExit(err error) {
@@ -88,34 +90,40 @@ func main() {
 
 	logger, err := initializeLogger(cfg.IsProduction)
 	logErrorAndExit(err)
-	defer logger.Sync() // flush logger
+	defer logger.Sync()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	rsAddr := fmt.Sprintf("%s:%d", cfg.RedisHost, cfg.RedisPort) // Redis address
-	grpcAddr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)         // GRPC API address
-	restAddr := fmt.Sprintf("%s:%d", cfg.Host, cfg.GatewayPort)  // REST API address
-
-	rsclient, err := redis.New(ctx, rsAddr, cfg.RedisPassword)
+	grpcAddr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)        // GRPC API address
+	restAddr := fmt.Sprintf("%s:%d", cfg.Host, cfg.GatewayPort) // REST API address
 	logErrorAndExit(err)
 
-	wgclient, err := wg.New(cfg.Device)
+	// Wireguard controller
+	wgclient, err := wgctrl.New()
 	logErrorAndExit(err)
 
-	peerStorage := storage.NewPeerStorage(logger, rsclient)
-	peerService := service.NewPeerService(logger, wgclient, peerStorage)
-	logErrorAndExit(peerService.Setup(ctx, cfg.Device, cfg.Address, cfg.Endpoint, cfg.PeerFolder))
+	// Storage
+	storage := storage.NewStorage(logger, cfg.PeerFolder)
 
-	grpcSrv, err := grpcserver.NewServer(ctx, logger, peerService, grpcAddr)
+	// Device service
+	deviceService := deviceservice.NewDeviceService(logger, wgclient, storage)
+	logErrorAndExit(deviceService.Setup(ctx, cfg.Device, cfg.Endpoint, cfg.Address))
+
+	// Peer service
+	peerService := peerservice.NewPeerService(logger, deviceService, storage)
+
+	// GRPC server
+	grpcSrv, err := grpcserver.New(ctx, logger, peerService, deviceService, grpcAddr, cfg.Tokens, cfg.ServerCert, cfg.ServerKey)
 	logErrorAndExit(err)
 
-	var restSrv *restserver.ServerImpl
+	var restSrv *restserver.Server
 	var wg sync.WaitGroup
 
 	if cfg.Gateway {
 		wg.Add(2)
-		restSrv, err = restserver.NewServer(ctx, logger, restAddr, grpcAddr, cfg.ServeSwagger)
+		// REST gateway
+		restSrv, err = restserver.New(ctx, logger, restAddr, grpcAddr, cfg.ServeSwagger, cfg.ServerCert, cfg.ServerKey)
 		logErrorAndExit(err)
 	} else {
 		wg.Add(1)
@@ -135,7 +143,6 @@ func main() {
 			defer wg.Done()
 			log.Println("rest gateway server is up and running")
 			if cfg.ServeSwagger {
-				// TODO: if in docker print correct url
 				log.Printf("swagger docs available at http://%s/swagger-ui\n", restAddr)
 			}
 
@@ -150,19 +157,15 @@ func main() {
 	<-ctx.Done()
 
 	if cfg.Gateway {
-		// gracefully stop rest gateway server
 		// TODO: add timeout
 		if err := restSrv.Stop(context.TODO()); err != nil {
 			logger.Error("failed to stop rest gateway server", zap.Error(err))
 		}
 	}
 
-	// gracefully stop grpc server
 	grpcSrv.Stop()
 
-	// wait for all goroutines to stop
 	wg.Wait()
 
-	// exit
 	os.Exit(1) //nolint:gocritic
 }
