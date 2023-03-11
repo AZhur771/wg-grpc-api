@@ -4,10 +4,9 @@
 
 GRPC API to manage wireguard peers.
 
-## Supported environment variables
+## Environment variables
 | Variable                    | Default       | Comment                                                          |
 |:----------------------------|:--------------|:-----------------------------------------------------------------|
-| WG_GRPC_API_PRODUCTION      | false         | App mode                                                         |
 | WG_GRPC_API_HOST            | localhost     | App host                                                         |
 | WG_GRPC_API_PORT            | 3000          | Grpc api port                                                    |
 | WG_GRPC_API_GATEWAY         | false         | Enale grpc api gateway                                           |
@@ -16,13 +15,14 @@ GRPC API to manage wireguard peers.
 | WG_GRPC_API_DEVICE          | wg0           | Wireguard interface                                              |
 | WG_GRPC_API_ADDRESS         | -             | Wireguard virtual address in CIDR notation (required)            |
 | WG_GRPC_API_ENDPOINT        | -             | VPN server public ip (required)                                  |
-| WG_GRPC_API_REDIS_HOST      | localhost     | Redis host                                                       |
-| WG_GRPC_API_REDIS_PORT      | 6379          | Redis port                                                       |
-| WG_GRPC_API_REDIS_PASSWORD  | -             | Redis password                                                   |
+| WG_GRPC_API_TOKENS          | -             | Authentication tokens                                            |
+| WG_GRPC_API_SERVER_CERT     | -             | Server certificate                                               |
+| WG_GRPC_API_SERVER_KEY      | 6379          | Server key                                                       |
+| WG_GRPC_API_PEER_FOLDER     | -             | Path to folder containing configured peers                       |
 
 
 ## TODO
-- [ ] Integration tests
-- [ ] Syncing existing peers with redis
+- [ ] Unit tests
+- [ ] Converting peer conf files to json
 - [ ] Fix enable/disable functionality
-- [ ] CLI (grpc client)
+- [ ] Add docker compose
