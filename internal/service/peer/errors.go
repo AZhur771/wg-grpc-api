@@ -1,4 +1,4 @@
-package peer_service
+package peerservice
 
 import "errors"
 

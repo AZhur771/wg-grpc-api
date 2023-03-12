@@ -2,9 +2,9 @@
 
 # wg-grpc-api
 
-GRPC API to manage wireguard peers.
+GRPC and Rest API to manage wireguard peers.
 
-## Environment variables
+## Supported environment variables
 | Variable                    | Default       | Comment                                                          |
 |:----------------------------|:--------------|:-----------------------------------------------------------------|
 | WG_GRPC_API_HOST            | localhost     | App host                                                         |
@@ -17,12 +17,13 @@ GRPC API to manage wireguard peers.
 | WG_GRPC_API_ENDPOINT        | -             | VPN server public ip (required)                                  |
 | WG_GRPC_API_TOKENS          | -             | Authentication tokens                                            |
 | WG_GRPC_API_SERVER_CERT     | -             | Server certificate                                               |
-| WG_GRPC_API_SERVER_KEY      | 6379          | Server key                                                       |
+| WG_GRPC_API_SERVER_KEY      | -             | Server key                                                       |
 | WG_GRPC_API_PEER_FOLDER     | -             | Path to folder containing configured peers                       |
 
 
 ## TODO
-- [ ] Unit tests
-- [ ] Converting peer conf files to json
-- [ ] Fix enable/disable functionality
-- [ ] Add docker compose
+- [ ] Add unit tests.
+- [ ] Add script to convert peer conf files to json.
+- [ ] Add docker compose examples.
+- [ ] Allow modifying more server options (PreUp/PostUp/PreDown/PostDown/DNS/MTU/ListenPort/Table).
+- [ ] Fix enable/disable functionality.

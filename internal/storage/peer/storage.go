@@ -1,4 +1,4 @@
-package storage
+package peerstorage
 
 import (
 	"context"
@@ -20,14 +20,14 @@ type Storage struct {
 	dir    string
 }
 
-func NewStorage(logger app.Logger, dir string) *Storage {
+func NewPeerStorage(logger app.Logger, dir string) *Storage {
 	return &Storage{
 		logger: logger,
 		dir:    dir,
 	}
 }
 
-func (ps *Storage) createOrUpdateEntityFile(ctx context.Context, peer *entity.Peer) (*entity.Peer, error) {
+func (ps *Storage) createOrUpdateEntityFile(peer *entity.Peer) (*entity.Peer, error) {
 	entityFile, err := os.Create(path.Join(ps.dir, fmt.Sprintf("%s.json", peer.ID.String())))
 	if err != nil {
 		return nil, fmt.Errorf("storage: %w", err)
@@ -49,7 +49,7 @@ func (ps *Storage) createOrUpdateEntityFile(ctx context.Context, peer *entity.Pe
 func (ps *Storage) Add(ctx context.Context, peer *entity.Peer) (*entity.Peer, error) {
 	peer.ID = uuid.New()
 
-	return ps.createOrUpdateEntityFile(ctx, peer)
+	return ps.createOrUpdateEntityFile(peer)
 }
 
 func (ps *Storage) Update(ctx context.Context, peer *entity.Peer) (*entity.Peer, error) {
@@ -58,7 +58,7 @@ func (ps *Storage) Update(ctx context.Context, peer *entity.Peer) (*entity.Peer,
 		return nil, fmt.Errorf("storage: %w", ErrPeerNotFound)
 	}
 
-	return ps.createOrUpdateEntityFile(ctx, peer)
+	return ps.createOrUpdateEntityFile(peer)
 }
 
 func (ps *Storage) Remove(ctx context.Context, id uuid.UUID) (*entity.Peer, error) {
@@ -104,7 +104,7 @@ func (ps *Storage) GetAll(ctx context.Context, skip, limit int) ([]*entity.Peer,
 		if limit == 0 {
 			files = files[skip:]
 		} else {
-			files = files[skip:limit]
+			files = files[skip : skip+limit]
 		}
 	}
 

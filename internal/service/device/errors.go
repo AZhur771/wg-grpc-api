@@ -1,4 +1,4 @@
-package device_service
+package deviceservice
 
 import "errors"
 

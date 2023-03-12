@@ -1,4 +1,4 @@
-package device_service
+package deviceservice
 
 import (
 	"bytes"
@@ -9,19 +9,18 @@ import (
 	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
 	"go.uber.org/zap"
-	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type DeviceService struct {
 	logger  app.Logger
-	ctrl    *wgctrl.Client
+	ctrl    app.WgCtrl
 	storage app.PeerStorage
 
 	device *entity.Device
 }
 
-func NewDeviceService(logger app.Logger, ctrl *wgctrl.Client, storage app.PeerStorage) *DeviceService {
+func NewDeviceService(logger app.Logger, ctrl app.WgCtrl, storage app.PeerStorage) *DeviceService {
 	return &DeviceService{
 		logger:  logger,
 		ctrl:    ctrl,
@@ -29,35 +28,8 @@ func NewDeviceService(logger app.Logger, ctrl *wgctrl.Client, storage app.PeerSt
 	}
 }
 
-func (ds *DeviceService) Setup(ctx context.Context, name string, endpoint string, address string) error {
-	wgdevice, err := ds.ctrl.Device(name)
-	if err != nil {
-		return fmt.Errorf("device service: %w", err)
-	}
-
-	ds.device = &entity.Device{
-		Name:         name,
-		Endpoint:     endpoint,
-		Address:      address,
-		Type:         wgdevice.Type,
-		PrivateKey:   wgdevice.PrivateKey,
-		PublicKey:    wgdevice.PublicKey,
-		ListenPort:   wgdevice.ListenPort,
-		FirewallMark: wgdevice.FirewallMark,
-	}
-
-	if err = ds.device.IsValid(); err != nil {
-		return fmt.Errorf("device service: %w", err)
-	}
-
-	if err = ds.device.ComputeMaxPeersCount(); err != nil {
-		return fmt.Errorf("device service: %w", err)
-	}
-
-	if err = ds.device.ComputeInitialReservedIPs(); err != nil {
-		return fmt.Errorf("device service: %w", err)
-	}
-
+//nolint:gocognit
+func (ds *DeviceService) syncPeers(ctx context.Context) error {
 	peers, err := ds.storage.GetAll(ctx, 0, 0)
 	if err != nil {
 		return fmt.Errorf("peer service: %w", err)
@@ -88,9 +60,10 @@ func (ds *DeviceService) Setup(ctx context.Context, name string, endpoint string
 			}
 		}
 
+		//nolint:nestif
 		if !peerInSync {
 			validPeer := true
-			tmpAllowedIps := make([]net.IP, len(peer.AllowedIPs))
+			tmpAllowedIps := make([]net.IP, 0, len(peer.AllowedIPs))
 			for _, allowedIP := range peer.AllowedIPs {
 				netip, _, err := net.ParseCIDR(allowedIP)
 				if err != nil {
@@ -124,6 +97,39 @@ func (ds *DeviceService) Setup(ctx context.Context, name string, endpoint string
 	}
 
 	return nil
+}
+
+func (ds *DeviceService) Setup(ctx context.Context, name string, endpoint string, address string) error {
+	wgdevice, err := ds.ctrl.Device(name)
+	if err != nil {
+		return fmt.Errorf("device service: %w", err)
+	}
+
+	ds.device = &entity.Device{
+		Name:         name,
+		Endpoint:     endpoint,
+		Address:      address,
+		Type:         wgdevice.Type,
+		PrivateKey:   wgdevice.PrivateKey,
+		PublicKey:    wgdevice.PublicKey,
+		ListenPort:   wgdevice.ListenPort,
+		FirewallMark: wgdevice.FirewallMark,
+	}
+
+	if err = ds.device.IsValid(); err != nil {
+		return fmt.Errorf("device service: %w", err)
+	}
+
+	if err = ds.device.ComputeMaxPeersCount(); err != nil {
+		return fmt.Errorf("device service: %w", err)
+	}
+
+	if err = ds.device.ComputeInitialReservedIPs(); err != nil {
+		return fmt.Errorf("device service: %w", err)
+	}
+
+	// sync peers with wg
+	return ds.syncPeers(ctx)
 }
 
 func (ds *DeviceService) GetDevice() (*entity.Device, error) {

@@ -8,7 +8,7 @@ import (
 	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
 	deviceservice "github.com/AZhur771/wg-grpc-api/internal/service/device"
-	"github.com/AZhur771/wg-grpc-api/internal/storage"
+	peerstorage "github.com/AZhur771/wg-grpc-api/internal/storage/peer"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
@@ -78,7 +78,7 @@ func durationToMilliseconds(duration time.Duration) float32 {
 }
 
 func getCode(err error) codes.Code {
-	if errors.Is(err, storage.ErrPeerNotFound) || errors.Is(err, entity.ErrIPNotFound) {
+	if errors.Is(err, peerstorage.ErrPeerNotFound) || errors.Is(err, entity.ErrIPNotFound) {
 		return codes.NotFound
 	}
 

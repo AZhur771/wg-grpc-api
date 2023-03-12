@@ -197,5 +197,4 @@ func TestEntityDevice_GetAvailableIP(t *testing.T) {
 	testDevice.Address = "10.0.0.1/32"
 	_, err = testDevice.GetAvailableIP()
 	require.ErrorIs(t, err, entity.ErrRunOutOfAddresses)
-
 }

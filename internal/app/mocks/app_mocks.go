@@ -107,6 +107,87 @@ func (mr *MockLoggerMockRecorder) Warn(arg0 interface{}, arg1 ...interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warn", reflect.TypeOf((*MockLogger)(nil).Warn), varargs...)
 }
 
+// MockWgCtrl is a mock of WgCtrl interface.
+type MockWgCtrl struct {
+	ctrl     *gomock.Controller
+	recorder *MockWgCtrlMockRecorder
+}
+
+// MockWgCtrlMockRecorder is the mock recorder for MockWgCtrl.
+type MockWgCtrlMockRecorder struct {
+	mock *MockWgCtrl
+}
+
+// NewMockWgCtrl creates a new mock instance.
+func NewMockWgCtrl(ctrl *gomock.Controller) *MockWgCtrl {
+	mock := &MockWgCtrl{ctrl: ctrl}
+	mock.recorder = &MockWgCtrlMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWgCtrl) EXPECT() *MockWgCtrlMockRecorder {
+	return m.recorder
+}
+
+// Close mocks base method.
+func (m *MockWgCtrl) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockWgCtrlMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockWgCtrl)(nil).Close))
+}
+
+// ConfigureDevice mocks base method.
+func (m *MockWgCtrl) ConfigureDevice(name string, cfg wgtypes.Config) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConfigureDevice", name, cfg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ConfigureDevice indicates an expected call of ConfigureDevice.
+func (mr *MockWgCtrlMockRecorder) ConfigureDevice(name, cfg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigureDevice", reflect.TypeOf((*MockWgCtrl)(nil).ConfigureDevice), name, cfg)
+}
+
+// Device mocks base method.
+func (m *MockWgCtrl) Device(name string) (*wgtypes.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Device", name)
+	ret0, _ := ret[0].(*wgtypes.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Device indicates an expected call of Device.
+func (mr *MockWgCtrlMockRecorder) Device(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Device", reflect.TypeOf((*MockWgCtrl)(nil).Device), name)
+}
+
+// Devices mocks base method.
+func (m *MockWgCtrl) Devices() ([]*wgtypes.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Devices")
+	ret0, _ := ret[0].([]*wgtypes.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Devices indicates an expected call of Devices.
+func (mr *MockWgCtrlMockRecorder) Devices() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Devices", reflect.TypeOf((*MockWgCtrl)(nil).Devices))
+}
+
 // MockPeerService is a mock of PeerService interface.
 type MockPeerService struct {
 	ctrl     *gomock.Controller

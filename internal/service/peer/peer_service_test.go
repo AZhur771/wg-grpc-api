@@ -1,217 +1,473 @@
-package peer_service_test
+package peerservice_test
 
-// import (
-// 	"context"
-// 	"testing"
-// 	"time"
+import (
+	"context"
+	"fmt"
+	"testing"
+	"time"
 
-// 	app_mocks "github.com/AZhur771/wg-grpc-api/internal/app/mocks"
-// 	"github.com/AZhur771/wg-grpc-api/internal/entity"
-// 	"github.com/AZhur771/wg-grpc-api/internal/service"
-// 	"github.com/golang/mock/gomock"
-// 	"github.com/google/uuid"
-// 	"github.com/stretchr/testify/require"
-// 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
-// )
+	app_mocks "github.com/AZhur771/wg-grpc-api/internal/app/mocks"
+	"github.com/AZhur771/wg-grpc-api/internal/dto"
+	"github.com/AZhur771/wg-grpc-api/internal/entity"
+	peerservice "github.com/AZhur771/wg-grpc-api/internal/service/peer"
+	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+)
 
-// var (
-// 	uuidMock             = "acda9b63-45ae-4352-995c-82202086cac4"
-// 	devicePrivateKeyMock = "WDhbZ4+4sE8LmIu4tSA1AXINX1ly+d+ZUwzazdiRMFU="
-// 	devicePublicKeyMock  = "MG+IiZS7uPsLMigRQoMch5MD7H2XCqEM+o9QJf1VGD4="
-// 	deviceNameMock       = "wg0"
-// 	deviceAddressMock    = "10.0.0.1/24" // address in CIDR notation
-// 	deviceEndpointMock   = "50.75.40.3"
-// 	peerFolderMock       = "/etc/some_folder"
-// )
+func generateMockDevice() (*entity.Device, error) {
+	privateKeyMock, err := wgtypes.GeneratePrivateKey()
+	if err != nil {
+		return nil, err
+	}
 
-// func generateMockDevice(peers []wgtypes.Peer) (*wgtypes.Device, error) {
-// 	privateKeyMock, err := wgtypes.ParseKey(devicePrivateKeyMock)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	device := &entity.Device{
+		Name:         "wg0",
+		Type:         0,
+		PrivateKey:   privateKeyMock,
+		PublicKey:    privateKeyMock.PublicKey(),
+		ListenPort:   51820,
+		Endpoint:     "192.0.2.1",
+		Address:      "10.0.0.1/24",
+		FirewallMark: 0,
+	}
 
-// 	publicKeyMock, err := wgtypes.ParseKey(devicePublicKeyMock)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	return device, nil
+}
 
-// 	return &wgtypes.Device{
-// 		Name:         "wg0",
-// 		Type:         0,
-// 		PrivateKey:   privateKeyMock,
-// 		PublicKey:    publicKeyMock,
-// 		ListenPort:   51820,
-// 		FirewallMark: 0,
-// 		Peers:        peers,
-// 	}, nil
-// }
+func generateMockPeer() (*entity.Peer, error) {
+	privateKey, err := wgtypes.GeneratePrivateKey()
+	if err != nil {
+		return nil, err
+	}
 
-// func generateMockPersistedPeer() (*entity.PersistedPeer, error) {
-// 	privateKey, err := wgtypes.GeneratePrivateKey()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	presharedKey, err := wgtypes.GenerateKey()
+	if err != nil {
+		return nil, err
+	}
 
-// 	presharedKey, err := wgtypes.GenerateKey()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	return &entity.Peer{
+		ID:                          uuid.New(),
+		Name:                        "Test peer",
+		Email:                       "email@example.com",
+		PrivateKey:                  privateKey,
+		PublicKey:                   privateKey,
+		PresharedKey:                presharedKey,
+		PersistentKeepaliveInterval: time.Second * 15,
+		LastHandshakeTime:           time.Now(),
+		AllowedIPs:                  []string{"10.0.0.3/32"},
+		HasPresharedKey:             true,
+		IsEnabled:                   true,
+		Tags:                        []string{"tag1", "tag2"},
+		Description:                 "Test peer description",
+	}, nil
+}
 
-// 	return &entity.PersistedPeer{
-// 		ID:                          uuidMock,
-// 		PrivateKey:                  privateKey.String(),
-// 		PublicKey:                   privateKey.PublicKey().String(),
-// 		PresharedKey:                presharedKey.String(),
-// 		PersistentKeepaliveInterval: time.Second * 15,
-// 		LastHandshakeTime:           time.Now(),
-// 		AllowedIPs:                  []string{"10.0.0.3/32"},
-// 		HasPresharedKey:             true,
-// 		IsEnabled:                   true,
-// 		Description:                 "some description",
-// 	}, nil
-// }
+func TestPeerService_AddPeer(t *testing.T) {
+	tests := []struct {
+		name                string
+		peerName            string
+		email               string
+		addPresharedKey     bool
+		persistentKeepAlive time.Duration
+		description         string
+		tags                []string
+	}{
+		{
+			name:        "Test peer creation without preshared key and keep alive",
+			peerName:    "Test peer 1",
+			email:       "email@example.com",
+			description: "Test peer description 1",
+		},
+		{
+			name:                "Test peer creation with preshared key and keep alive",
+			addPresharedKey:     true,
+			peerName:            "Test peer 2",
+			persistentKeepAlive: time.Second * 15,
+			description:         "Test peer description 2",
+			tags:                []string{"tag1", "tag2"},
+		},
+	}
 
-// func TestPeerService_AddPeer(t *testing.T) {
-// 	tests := []struct {
-// 		name                string
-// 		addPresharedKey     bool
-// 		persistentKeepAlive time.Duration
-// 		description         string
-// 	}{
-// 		{
-// 			name:        "Test peer creation without preshared key and keep alive",
-// 			description: "Test peer 1",
-// 		},
-// 		{
-// 			name:                "Test peer creation with preshared key and keep alive",
-// 			addPresharedKey:     true,
-// 			persistentKeepAlive: time.Second * 15,
-// 			description:         "Test peer 1",
-// 		},
-// 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mockCtrl := gomock.NewController(t)
-// 			defer mockCtrl.Finish()
+			mockLogger := app_mocks.NewMockLogger(mockCtrl)
+			mockDeviceService := app_mocks.NewMockDeviceService(mockCtrl)
+			mockStorage := app_mocks.NewMockPeerStorage(mockCtrl)
 
-// 			mockLogger := app_mocks.NewMockLogger(mockCtrl)
-// 			mockWgCtrl := app_mocks.NewMockWgCtrl(mockCtrl)
-// 			mockStorage := app_mocks.NewMockPeerStorage(mockCtrl)
+			mockDevice, err := generateMockDevice()
+			require.NoError(t, err)
 
-// 			idMock, err := uuid.Parse(uuidMock)
-// 			require.NoError(t, err)
+			mockStorage.EXPECT().
+				Add(context.Background(), gomock.Any()).
+				DoAndReturn(
+					func(ctx context.Context, peer *entity.Peer) (*entity.Peer, error) {
+						return peer, nil
+					},
+				).
+				Times(1)
 
-// 			mockDevice, err := generateMockDevice([]wgtypes.Peer{})
-// 			require.NoError(t, err)
+			mockDeviceService.EXPECT().AddPeer(gomock.Any()).Return(nil).Times(1)
+			mockDeviceService.EXPECT().GetPeer(gomock.Any()).Return(wgtypes.Peer{}, nil).Times(1)
+			mockDeviceService.EXPECT().GetDevice().Return(mockDevice, nil).Times(1)
 
-// 			mockWgCtrl.EXPECT().GetDevice().Return(mockDevice, nil).Times(1)
+			srv := peerservice.NewPeerService(
+				mockLogger,
+				mockDeviceService,
+				mockStorage,
+			)
 
-// 			mockWgCtrl.EXPECT().AddPeer(gomock.Any()).Return(nil).Times(1)
-// 			mockWgCtrl.EXPECT().GetPeers().Return([]wgtypes.Peer{}, nil).Times(1)
+			testAddPeerDTO := dto.AddPeerDTO{
+				Name:                tt.peerName,
+				Email:               tt.email,
+				AddPresharedKey:     tt.addPresharedKey,
+				PersistentKeepAlive: tt.persistentKeepAlive,
+				Tags:                tt.tags,
+				Description:         tt.description,
+			}
 
-// 			mockStorage.EXPECT().Add(context.Background(), gomock.Any()).Return(idMock, nil).Times(1)
-// 			mockStorage.EXPECT().GetAll(context.Background()).Return([]*entity.PersistedPeer{}, nil).Times(1)
+			peer, err := srv.Add(context.Background(), testAddPeerDTO)
+			require.NoError(t, err)
+			require.Equal(t, tt.peerName, peer.Name)
+			require.Equal(t, tt.email, peer.Email)
+			require.Equal(t, tt.description, peer.Description)
+			require.Equal(t, tt.tags, peer.Tags)
+			require.Equal(t, tt.addPresharedKey, peer.HasPresharedKey)
+			require.Equal(t, tt.persistentKeepAlive, peer.PersistentKeepaliveInterval)
+			require.Equal(t, []string{"10.0.0.0/32"}, peer.AllowedIPs)
+		})
+	}
+}
 
-// 			srv := service.NewPeerService(
-// 				mockLogger,
-// 				mockWgCtrl,
-// 				mockStorage,
-// 			)
-// 			srv.Setup(
-// 				context.Background(),
-// 				deviceNameMock,
-// 				deviceAddressMock,
-// 				deviceEndpointMock,
-// 				peerFolderMock,
-// 			)
+func TestPeerService_RemovePeer(t *testing.T) {
+	tests := []struct {
+		name    string
+		enabled bool
+	}{
+		{
+			name:    "Test enabled peer deletion",
+			enabled: true,
+		},
+		{
+			name:    "Test disabled peer deletion",
+			enabled: false,
+		},
+	}
 
-// 			peer, err := srv.Add(context.Background(), tt.addPresharedKey, tt.persistentKeepAlive, tt.description)
-// 			require.NoError(t, err)
-// 			require.Equal(t, uuidMock, peer.ID.String())
-// 			require.Equal(t, tt.addPresharedKey, peer.HasPresharedKey)
-// 			require.Equal(t, tt.persistentKeepAlive, peer.PersistentKeepaliveInterval)
-// 			require.Equal(t, tt.description, peer.Description)
-// 		})
-// 	}
-// }
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
 
-// func TestPeerService_RemovePeer(t *testing.T) {
-// 	tests := []struct {
-// 		name                string
-// 		addPresharedKey     bool
-// 		persistentKeepAlive time.Duration
-// 		description         string
-// 	}{
-// 		{
-// 			name:        "Test peer creation without preshared key and keep alive",
-// 			description: "Test peer 1",
-// 		},
-// 		{
-// 			name:                "Test peer creation with preshared key and keep alive",
-// 			addPresharedKey:     true,
-// 			persistentKeepAlive: time.Second * 15,
-// 			description:         "Test peer 1",
-// 		},
-// 	}
+			mockLogger := app_mocks.NewMockLogger(mockCtrl)
+			mockDeviceService := app_mocks.NewMockDeviceService(mockCtrl)
+			mockStorage := app_mocks.NewMockPeerStorage(mockCtrl)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mockCtrl := gomock.NewController(t)
-// 			defer mockCtrl.Finish()
+			mockPeer, err := generateMockPeer()
+			require.NoError(t, err)
+			mockPeer.IsEnabled = tt.enabled
 
-// 			mockLogger := app_mocks.NewMockLogger(mockCtrl)
-// 			mockWgCtrl := app_mocks.NewMockWgCtrl(mockCtrl)
-// 			mockStorage := app_mocks.NewMockPeerStorage(mockCtrl)
+			mockStorage.EXPECT().
+				Remove(context.Background(), mockPeer.ID).
+				Return(mockPeer, nil).
+				Times(1)
 
-// 			idMock, err := uuid.Parse(uuidMock)
-// 			require.NoError(t, err)
+			expectedRemovePeerCalls := 0
+			if tt.enabled {
+				expectedRemovePeerCalls = 1
+			}
 
-// 			mockDevice, err := generateMockDevice([]wgtypes.Peer{})
-// 			require.NoError(t, err)
+			mockDeviceService.EXPECT().
+				RemovePeer(gomock.Any()).
+				Return(nil).
+				Times(expectedRemovePeerCalls)
 
-// 			mockWgCtrl.EXPECT().GetDevice().Return(mockDevice, nil).Times(1)
+			srv := peerservice.NewPeerService(
+				mockLogger,
+				mockDeviceService,
+				mockStorage,
+			)
 
-// 			mockWgCtrl.EXPECT().RemovePeer(gomock.Any()).Return(nil).Times(1)
-// 			mockWgCtrl.EXPECT().GetPeers().Return([]wgtypes.Peer{}, nil).Times(1)
+			err = srv.Remove(context.Background(), mockPeer.ID)
+			require.NoError(t, err)
+		})
+	}
+}
 
-// 			persistedPeerMock, err := generateMockPersistedPeer()
-// 			require.NoError(t, err)
+func TestPeerService_UpdatePeer(t *testing.T) {
+	tests := []struct {
+		name                string
+		peerName            string
+		email               string
+		addPresharedKey     bool
+		removePresharedKey  bool
+		persistentKeepAlive time.Duration
+		description         string
+		tags                []string
+		hasPresharedKey     bool
+	}{
+		{
+			name:            "Test updating peer",
+			peerName:        "Test peer 1",
+			email:           "email@example.com",
+			description:     "Test peer description 1",
+			hasPresharedKey: true,
+		},
+		{
+			name:               "Test removing preshared key",
+			peerName:           "Test peer 2",
+			email:              "email@example.com",
+			description:        "Test peer description 2",
+			removePresharedKey: true,
+			hasPresharedKey:    false,
+		},
+		{
+			name:                "Test adding preshared key and keep alive to peer",
+			addPresharedKey:     true,
+			peerName:            "Test peer 3",
+			persistentKeepAlive: time.Second * 15,
+			description:         "Test peer description 3",
+			tags:                []string{"newtag1", "newtag2"},
+			hasPresharedKey:     true,
+		},
+	}
 
-// 			mockStorage.EXPECT().Get(context.Background(), idMock).Return(persistedPeerMock, nil).Times(1)
-// 			mockStorage.EXPECT().GetAll(context.Background()).Return([]*entity.PersistedPeer{}, nil).Times(1)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
 
-// 			srv := service.NewPeerService(
-// 				mockLogger,
-// 				mockWgCtrl,
-// 				mockStorage,
-// 			)
-// 			srv.Setup(
-// 				context.Background(),
-// 				deviceNameMock,
-// 				deviceAddressMock,
-// 				deviceEndpointMock,
-// 				peerFolderMock,
-// 			)
+			mockLogger := app_mocks.NewMockLogger(mockCtrl)
+			mockDeviceService := app_mocks.NewMockDeviceService(mockCtrl)
+			mockStorage := app_mocks.NewMockPeerStorage(mockCtrl)
 
-// 			peer, err := srv.Remove(context.Background(), idMock)
-// 			require.NoError(t, err)
-// 			require.Equal(t, uuidMock, peer.ID.String())
-// 			require.Equal(t, persistedPeerMock.HasPresharedKey, peer.PresharedKey)
-// 			require.Equal(t, persistedPeerMock.PersistentKeepaliveInterval, persistedPeerMock.PersistentKeepaliveInterval)
-// 			require.Equal(t, persistedPeerMock.Description, persistedPeerMock.Description)
-// 		})
-// 	}
-// }
+			mockPeer, err := generateMockPeer()
+			require.NoError(t, err)
 
-// func TestPeerService_UpdatePeer(t *testing.T) {
+			if tt.addPresharedKey {
+				mockPeer.PresharedKey = wgtypes.Key{}
+				mockPeer.HasPresharedKey = false
+			}
 
-// }
+			mockStorage.EXPECT().
+				Get(context.Background(), mockPeer.ID).
+				Return(mockPeer, nil).
+				Times(1)
+			mockStorage.EXPECT().
+				Update(context.Background(), gomock.Any()).
+				DoAndReturn(
+					func(ctx context.Context, peer *entity.Peer) (*entity.Peer, error) {
+						return peer, nil
+					},
+				).
+				Times(1)
 
-// func TestPeerService_GetPeer(t *testing.T) {
+			mockDeviceService.EXPECT().UpdatePeer(gomock.Any()).Return(nil).Times(1)
+			mockDeviceService.EXPECT().GetPeer(gomock.Any()).Return(wgtypes.Peer{}, nil).Times(1)
 
-// }
+			srv := peerservice.NewPeerService(
+				mockLogger,
+				mockDeviceService,
+				mockStorage,
+			)
 
-// func TestPeerService_GetPeers(t *testing.T) {
+			testUpdatePeerDTO := dto.UpdatePeerDTO{
+				ID:                  mockPeer.ID,
+				Name:                tt.peerName,
+				Email:               tt.email,
+				AddPresharedKey:     tt.addPresharedKey,
+				RemovePresharedKey:  tt.removePresharedKey,
+				PersistentKeepAlive: tt.persistentKeepAlive,
+				Tags:                tt.tags,
+				Description:         tt.description,
+			}
 
-// }
+			peer, err := srv.Update(context.Background(), testUpdatePeerDTO)
+			require.NoError(t, err)
+			require.Equal(t, tt.peerName, peer.Name)
+			require.Equal(t, tt.email, peer.Email)
+			require.Equal(t, tt.description, peer.Description)
+			require.Equal(t, tt.tags, peer.Tags)
+			require.Equal(t, tt.persistentKeepAlive, peer.PersistentKeepaliveInterval)
+			require.Equal(t, tt.hasPresharedKey, peer.HasPresharedKey)
+		})
+	}
+}
+
+func TestPeerService_GetPeer(t *testing.T) {
+	tests := []struct {
+		name    string
+		enabled bool
+	}{
+		{
+			name:    "Test getting enabled peer",
+			enabled: true,
+		},
+		{
+			name:    "Test getting disabled peer",
+			enabled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			mockLogger := app_mocks.NewMockLogger(mockCtrl)
+			mockDeviceService := app_mocks.NewMockDeviceService(mockCtrl)
+			mockStorage := app_mocks.NewMockPeerStorage(mockCtrl)
+
+			mockPeer, err := generateMockPeer()
+			require.NoError(t, err)
+			mockPeer.IsEnabled = tt.enabled
+
+			mockStorage.EXPECT().
+				Get(context.Background(), mockPeer.ID).
+				Return(mockPeer, nil).
+				Times(1)
+
+			expectedGetPeerCalls := 0
+			if tt.enabled {
+				expectedGetPeerCalls = 1
+			}
+
+			mockDeviceService.EXPECT().
+				GetPeer(mockPeer.PublicKey).
+				Return(wgtypes.Peer{}, nil).
+				Times(expectedGetPeerCalls)
+
+			srv := peerservice.NewPeerService(
+				mockLogger,
+				mockDeviceService,
+				mockStorage,
+			)
+
+			peer, err := srv.Get(context.Background(), mockPeer.ID)
+			require.NoError(t, err)
+			require.Equal(t, mockPeer.ID, peer.ID)
+		})
+	}
+}
+
+func TestPeerService_GetPeers(t *testing.T) {
+	tests := []struct {
+		name  string
+		skip  int
+		limit int
+
+		expectedPeersCount int
+		expectedTotal      int
+		expectedHasNext    bool
+	}{
+		{
+			name:               "Test getting all peers with default skip and limit",
+			expectedPeersCount: 20,
+			expectedTotal:      30,
+			expectedHasNext:    true,
+		},
+		{
+			name:               "Test getting all peers with skip=5",
+			skip:               5,
+			expectedPeersCount: 20,
+			expectedTotal:      30,
+			expectedHasNext:    true,
+		},
+		{
+			name:               "Test getting all peers with skip=10",
+			skip:               10,
+			expectedPeersCount: 20,
+			expectedTotal:      30,
+			expectedHasNext:    false,
+		},
+		{
+			name:               "Test getting all peers with skip=5 and limit=10",
+			skip:               5,
+			limit:              10,
+			expectedPeersCount: 10,
+			expectedTotal:      30,
+			expectedHasNext:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			mockLogger := app_mocks.NewMockLogger(mockCtrl)
+			mockDeviceService := app_mocks.NewMockDeviceService(mockCtrl)
+			mockStorage := app_mocks.NewMockPeerStorage(mockCtrl)
+
+			mockPeers := make([]*entity.Peer, 0, 30)
+			mockWgPeers := make([]wgtypes.Peer, 0, 30)
+
+			n := 0
+			for n < tt.expectedTotal {
+				mockPeer, err := generateMockPeer()
+				require.NoError(t, err)
+
+				mockPeer.Name = fmt.Sprintf("Test peer %d", n)
+				mockPeers = append(mockPeers, mockPeer)
+
+				mockWgPeer := wgtypes.Peer{
+					PublicKey: mockPeer.PublicKey,
+				}
+				mockWgPeers = append(mockWgPeers, mockWgPeer)
+
+				n++
+			}
+
+			mockStorage.EXPECT().
+				CountAll(context.Background()).
+				Return(len(mockPeers), nil).
+				Times(1)
+
+			mockStorage.EXPECT().
+				GetAll(
+					context.Background(),
+					gomock.AssignableToTypeOf(tt.skip),
+					gomock.AssignableToTypeOf(tt.limit),
+				).
+				DoAndReturn(
+					func(ctx context.Context, skip, limit int) ([]*entity.Peer, error) {
+						if skip != 0 || limit != 0 {
+							if limit == 0 {
+								mockPeers = mockPeers[skip:]
+							} else {
+								mockPeers = mockPeers[skip : skip+limit]
+							}
+						}
+
+						return mockPeers, nil
+					},
+				).
+				Times(1)
+
+			mockDeviceService.EXPECT().
+				GetPeers().
+				Return(mockWgPeers, nil).
+				Times(1)
+
+			srv := peerservice.NewPeerService(
+				mockLogger,
+				mockDeviceService,
+				mockStorage,
+			)
+
+			getPeersRequestDTO := dto.GetPeersRequestDTO{
+				Skip:  tt.skip,
+				Limit: tt.limit,
+			}
+			getPeersResponseDTO, err := srv.GetAll(context.Background(), getPeersRequestDTO)
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedPeersCount, len(getPeersResponseDTO.Peers))
+			require.Equal(t, tt.expectedTotal, getPeersResponseDTO.Total)
+			require.Equal(t, tt.expectedHasNext, getPeersResponseDTO.HasNext)
+		})
+	}
+}

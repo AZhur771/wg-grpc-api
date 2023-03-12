@@ -186,7 +186,7 @@ func getBroadcastAddr(n *net.IPNet) net.IP {
 	return broadcast
 }
 
-// computeMaxPeers computes max peers from mask
+// computeMaxPeers computes max peers from mask.
 func computeMaxPeers(mask net.IPMask) int {
 	ones, _ := mask.Size()
 	return (2 << (32 - ones - 1)) - 1

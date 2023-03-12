@@ -18,6 +18,13 @@ type Logger interface {
 	Error(string, ...zapcore.Field)
 }
 
+type WgCtrl interface {
+	Close() error
+	Device(name string) (*wgtypes.Device, error)
+	Devices() ([]*wgtypes.Device, error)
+	ConfigureDevice(name string, cfg wgtypes.Config) error
+}
+
 type PeerService interface {
 	Add(ctx context.Context, addPeerDTO dto.AddPeerDTO) (*entity.Peer, error)
 	Update(ctx context.Context, updatePeerDTO dto.UpdatePeerDTO) (*entity.Peer, error)

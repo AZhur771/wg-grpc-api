@@ -1,4 +1,4 @@
-package peer_service
+package peerservice
 
 import (
 	"bytes"
@@ -16,6 +16,8 @@ import (
 	"go.uber.org/zap"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
+
+const defaultLimit = 20
 
 type PeerService struct {
 	logger        app.Logger
@@ -192,7 +194,7 @@ func (ps *PeerService) GetAll(ctx context.Context, getPeersRequest dto.GetPeersR
 	}
 
 	if getPeersRequest.Limit == 0 {
-		getPeersRequest.Limit = 20 // Default limit
+		getPeersRequest.Limit = defaultLimit // Default limit
 	}
 
 	totalPeers, err := ps.storage.CountAll(ctx)
@@ -228,7 +230,7 @@ func (ps *PeerService) GetAll(ctx context.Context, getPeersRequest dto.GetPeersR
 
 	getPeersResponse.Total = totalPeers
 	getPeersResponse.Peers = peers
-	getPeersResponse.HasNext = (getPeersRequest.Skip + getPeersRequest.Skip) < totalPeers
+	getPeersResponse.HasNext = (getPeersRequest.Skip + getPeersRequest.Limit) < totalPeers
 
 	return getPeersResponse, nil
 }

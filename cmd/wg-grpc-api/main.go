@@ -17,7 +17,7 @@ import (
 	restserver "github.com/AZhur771/wg-grpc-api/internal/server/rest"
 	deviceservice "github.com/AZhur771/wg-grpc-api/internal/service/device"
 	peerservice "github.com/AZhur771/wg-grpc-api/internal/service/peer"
-	"github.com/AZhur771/wg-grpc-api/internal/storage"
+	peerstorage "github.com/AZhur771/wg-grpc-api/internal/storage/peer"
 	"github.com/caarlos0/env/v6"
 	"go.uber.org/zap"
 	"golang.zx2c4.com/wireguard/wgctrl"
@@ -103,15 +103,15 @@ func main() {
 	wgclient, err := wgctrl.New()
 	logErrorAndExit(err)
 
-	// Storage
-	storage := storage.NewStorage(logger, cfg.PeerFolder)
+	// Peer storage
+	peerStorage := peerstorage.NewPeerStorage(logger, cfg.PeerFolder)
 
 	// Device service
-	deviceService := deviceservice.NewDeviceService(logger, wgclient, storage)
+	deviceService := deviceservice.NewDeviceService(logger, wgclient, peerStorage)
 	logErrorAndExit(deviceService.Setup(ctx, cfg.Device, cfg.Endpoint, cfg.Address))
 
 	// Peer service
-	peerService := peerservice.NewPeerService(logger, deviceService, storage)
+	peerService := peerservice.NewPeerService(logger, deviceService, peerStorage)
 
 	// GRPC server
 	grpcSrv, err := grpcserver.New(ctx, logger, peerService, deviceService, grpcAddr, cfg.Tokens, cfg.ServerCert, cfg.ServerKey)

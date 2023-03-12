@@ -9,7 +9,7 @@ import (
 	"github.com/AZhur771/wg-grpc-api/internal/dto"
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
 	peerservice "github.com/AZhur771/wg-grpc-api/internal/service/peer"
-	"github.com/AZhur771/wg-grpc-api/internal/storage"
+	peerstorage "github.com/AZhur771/wg-grpc-api/internal/storage/peer"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -86,7 +86,7 @@ func (p *PeersImpl) UpdatePeer(ctx context.Context, updatePeerRequest *wgpb.Upda
 		},
 	)
 
-	if errors.Is(err, storage.ErrPeerNotFound) {
+	if errors.Is(err, peerstorage.ErrPeerNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
@@ -104,7 +104,7 @@ func (p *PeersImpl) GetPeer(ctx context.Context, peerIDRequest *wgpb.PeerIdReque
 	}
 
 	peer, err := p.Service.Get(ctx, id)
-	if errors.Is(err, storage.ErrPeerNotFound) {
+	if errors.Is(err, peerstorage.ErrPeerNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
@@ -148,7 +148,7 @@ func (p *PeersImpl) EnablePeer(ctx context.Context, peerIDRequest *wgpb.PeerIdRe
 	}
 
 	if err := p.Service.Enable(ctx, ID); err != nil {
-		if errors.Is(err, storage.ErrPeerNotFound) {
+		if errors.Is(err, peerstorage.ErrPeerNotFound) {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 
@@ -165,7 +165,7 @@ func (p *PeersImpl) DisablePeer(ctx context.Context, peerIDRequest *wgpb.PeerIdR
 	}
 
 	if err := p.Service.Disable(ctx, ID); err != nil {
-		if errors.Is(err, storage.ErrPeerNotFound) {
+		if errors.Is(err, peerstorage.ErrPeerNotFound) {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 
@@ -182,7 +182,7 @@ func (p *PeersImpl) DownloadPeerConfig(ctx context.Context, peerIDRequest *wgpb.
 	}
 
 	downloadFileDTO, err := p.Service.DownloadConfig(ctx, ID)
-	if errors.Is(err, storage.ErrPeerNotFound) {
+	if errors.Is(err, peerstorage.ErrPeerNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
@@ -204,7 +204,7 @@ func (p *PeersImpl) DownloadPeerQRCode(ctx context.Context, peerIDRequest *wgpb.
 	}
 
 	downloadFileDTO, err := p.Service.DownloadQRCode(ctx, ID)
-	if errors.Is(err, storage.ErrPeerNotFound) {
+	if errors.Is(err, peerstorage.ErrPeerNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
