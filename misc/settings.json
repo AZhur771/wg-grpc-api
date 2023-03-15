@@ -1,0 +1,6 @@
+{
+    "go.alternateTools": {
+        "dlv-dap": "${workspaceFolder}/misc/dlv.sh",
+        "dlv": "${workspaceFolder}/misc/dlv.sh"
+    }
+}

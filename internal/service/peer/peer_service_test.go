@@ -52,7 +52,7 @@ func generateMockPeer() (*entity.Peer, error) {
 		Name:                        "Test peer",
 		Email:                       "email@example.com",
 		PrivateKey:                  privateKey,
-		PublicKey:                   privateKey,
+		PublicKey:                   privateKey.PublicKey(),
 		PresharedKey:                presharedKey,
 		PersistentKeepaliveInterval: time.Second * 15,
 		LastHandshakeTime:           time.Now(),
