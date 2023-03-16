@@ -392,6 +392,27 @@ func TestPeerService_GetPeers(t *testing.T) {
 			expectedTotal:      30,
 			expectedHasNext:    true,
 		},
+		{
+			name:               "Test getting all peers with limit=1",
+			limit:              1,
+			expectedPeersCount: 1,
+			expectedTotal:      30,
+			expectedHasNext:    true,
+		},
+		{
+			name:               "Test getting all peers with limit=30",
+			limit:              30,
+			expectedPeersCount: 30,
+			expectedTotal:      30,
+			expectedHasNext:    false,
+		},
+		{
+			name:               "Test getting all peers with limit=40",
+			limit:              40,
+			expectedPeersCount: 30,
+			expectedTotal:      30,
+			expectedHasNext:    false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -435,15 +456,15 @@ func TestPeerService_GetPeers(t *testing.T) {
 				).
 				DoAndReturn(
 					func(ctx context.Context, skip, limit int) ([]*entity.Peer, error) {
-						if skip != 0 || limit != 0 {
-							if limit == 0 {
-								mockPeers = mockPeers[skip:]
-							} else {
-								mockPeers = mockPeers[skip : skip+limit]
-							}
+						if skip >= len(mockPeers) {
+							return make([]*entity.Peer, 0), nil
 						}
 
-						return mockPeers, nil
+						if limit == 0 || skip+limit >= len(mockPeers) {
+							return mockPeers[skip:], nil
+						}
+
+						return mockPeers[skip : skip+limit], nil
 					},
 				).
 				Times(1)

@@ -3,6 +3,7 @@ package peerstorage
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
@@ -88,6 +89,18 @@ func (ps *Storage) Get(ctx context.Context, id uuid.UUID) (*entity.Peer, error) 
 	return peer, nil
 }
 
+func (ps *Storage) sliceFiles(files []fs.FileInfo, skip, limit int) []fs.FileInfo {
+	if skip >= len(files) {
+		return make([]fs.FileInfo, 0)
+	}
+
+	if limit == 0 || skip+limit >= len(files) {
+		return files[skip:]
+	}
+
+	return files[skip : skip+limit]
+}
+
 func (ps *Storage) GetAll(ctx context.Context, skip, limit int) ([]*entity.Peer, error) {
 	files, err := ioutil.ReadDir(ps.dir)
 	if err != nil {
@@ -98,15 +111,7 @@ func (ps *Storage) GetAll(ctx context.Context, skip, limit int) ([]*entity.Peer,
 		return files[i].ModTime().After(files[j].ModTime())
 	})
 
-	if skip != 0 || limit != 0 {
-		// if limit is zero, than it is not passed
-		// and we should return all the rest of the files
-		if limit == 0 {
-			files = files[skip:]
-		} else {
-			files = files[skip : skip+limit]
-		}
-	}
+	files = ps.sliceFiles(files, skip, limit)
 
 	peers := make([]*entity.Peer, 0, len(files))
 

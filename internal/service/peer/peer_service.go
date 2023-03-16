@@ -193,13 +193,13 @@ func (ps *PeerService) GetAll(ctx context.Context, getPeersRequest dto.GetPeersR
 		return getPeersResponse, fmt.Errorf("peer service: %w", ErrInvalidPaginationParams)
 	}
 
-	if getPeersRequest.Limit == 0 {
-		getPeersRequest.Limit = defaultLimit // Default limit
-	}
-
 	totalPeers, err := ps.storage.CountAll(ctx)
 	if err != nil {
 		return getPeersResponse, fmt.Errorf("peer service: %w", err)
+	}
+
+	if getPeersRequest.Limit == 0 {
+		getPeersRequest.Limit = defaultLimit // Default limit
 	}
 
 	peers, err := ps.storage.GetAll(ctx, getPeersRequest.Skip, getPeersRequest.Limit)
