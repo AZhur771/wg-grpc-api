@@ -15,9 +15,9 @@ type Peer struct {
 	ID                          uuid.UUID     `json:"id"`
 	Name                        string        `json:"name"`
 	Email                       string        `json:"email"`
-	PrivateKey                  wgtypes.Key   `json:"privateKey"`
-	PublicKey                   wgtypes.Key   `json:"publicKey"`
-	PresharedKey                wgtypes.Key   `json:"presharedKey"`
+	PrivateKey                  WgKey         `json:"privateKey"`
+	PublicKey                   WgKey         `json:"publicKey"`
+	PresharedKey                WgKey         `json:"presharedKey"`
 	Endpoint                    *net.UDPAddr  `json:"-"`
 	PersistentKeepaliveInterval time.Duration `json:"persistentKeepAliveInterval"`
 	LastHandshakeTime           time.Time     `json:"-"`
@@ -74,9 +74,11 @@ func (p *Peer) ToPeerConfig() (*wgtypes.PeerConfig, error) {
 		return nil, fmt.Errorf("peer: %w", err)
 	}
 
+	wgPresharedKey := wgtypes.Key(p.PresharedKey)
+
 	return &wgtypes.PeerConfig{
-		PublicKey:                   p.PublicKey,
-		PresharedKey:                &p.PresharedKey,
+		PublicKey:                   wgtypes.Key(p.PublicKey),
+		PresharedKey:                &wgPresharedKey,
 		Endpoint:                    p.Endpoint,
 		PersistentKeepaliveInterval: &p.PersistentKeepaliveInterval,
 		AllowedIPs:                  allowedIPs,

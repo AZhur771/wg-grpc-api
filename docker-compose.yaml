@@ -1,0 +1,20 @@
+version: '3.6'
+services:
+  wg-gen-web-demo:
+    image: andrew771/wg-grpc-api:latest
+    container_name: wg-grpc-api
+    restart: unless-stopped
+    ports:
+      - "8080:3001"
+    environment:
+      - WG_GRPC_API_ADDRESS=<WG_GRPC_API_ADDRESS>
+      - WG_GRPC_API_ENDPOINT=<WG_GRPC_API_ENDPOINT>
+      - WG_GRPC_API_PEER_FOLDER=/data
+      - WG_GRPC_API_GATEWAY=true
+      - WG_GRPC_API_SWAGGER=true
+      - WG_GRPC_API_TOKENS=<WG_GRPC_API_TOKENS>
+    volumes:
+      - /etc/wg-grpc-api/data:/data
+    cap_add:
+      - NET_ADMIN
+    network_mode: "host"

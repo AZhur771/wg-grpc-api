@@ -2,7 +2,6 @@ package peerstorage_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,6 +14,7 @@ import (
 	peerstorage "github.com/AZhur771/wg-grpc-api/internal/storage/peer"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	"github.com/mailru/easyjson"
 	"github.com/stretchr/testify/require"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -34,9 +34,9 @@ func generateMockPeer() (*entity.Peer, error) {
 		ID:                          uuid.New(),
 		Name:                        "Test peer",
 		Email:                       "email@example.com",
-		PrivateKey:                  privateKey,
-		PublicKey:                   privateKey.PublicKey(),
-		PresharedKey:                presharedKey,
+		PrivateKey:                  entity.WgKey(privateKey),
+		PublicKey:                   entity.WgKey(privateKey.PublicKey()),
+		PresharedKey:                entity.WgKey(presharedKey),
 		PersistentKeepaliveInterval: time.Second * 15,
 		LastHandshakeTime:           time.Now(),
 		AllowedIPs:                  []string{"10.0.0.3/32"},
@@ -73,7 +73,7 @@ func TestPeerStorage_Add(t *testing.T) {
 	bytes, err := ioutil.ReadFile(path.Join(testDir, files[0].Name()))
 	require.NoError(t, err)
 
-	err = json.Unmarshal(bytes, peerEntity)
+	err = easyjson.Unmarshal(bytes, peerEntity)
 	require.NoError(t, err)
 	require.Equal(t, peerEntity.ID, peer.ID)
 	require.Equal(t, peerEntity.Name, peer.Name)
@@ -91,7 +91,7 @@ func TestPeerStorage_Update(t *testing.T) {
 	mockPeer, err := generateMockPeer()
 	require.NoError(t, err)
 
-	bytes, err := json.Marshal(mockPeer)
+	bytes, err := easyjson.Marshal(mockPeer)
 	require.NoError(t, err)
 
 	file, err := os.Create(path.Join(testDir, fmt.Sprintf("%s.json", mockPeer.ID)))
@@ -119,7 +119,7 @@ func TestPeerStorage_Remove(t *testing.T) {
 	mockPeer, err := generateMockPeer()
 	require.NoError(t, err)
 
-	bytes, err := json.Marshal(mockPeer)
+	bytes, err := easyjson.Marshal(mockPeer)
 	require.NoError(t, err)
 
 	file, err := os.Create(path.Join(testDir, fmt.Sprintf("%s.json", mockPeer.ID)))
@@ -148,7 +148,7 @@ func TestPeerStorage_Get(t *testing.T) {
 	mockPeer, err := generateMockPeer()
 	require.NoError(t, err)
 
-	bytes, err := json.Marshal(mockPeer)
+	bytes, err := easyjson.Marshal(mockPeer)
 	require.NoError(t, err)
 
 	file, err := os.Create(path.Join(testDir, fmt.Sprintf("%s.json", mockPeer.ID)))
@@ -223,7 +223,7 @@ func TestPeerStorage_GetAll(t *testing.T) {
 				require.NoError(t, err)
 				mockPeer.Name = fmt.Sprintf("Test peer %d", n)
 
-				bytes, err := json.Marshal(mockPeer)
+				bytes, err := easyjson.Marshal(mockPeer)
 				require.NoError(t, err)
 
 				file, err := os.Create(path.Join(testDir, fmt.Sprintf("%s.json", mockPeer.ID)))

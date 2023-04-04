@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
 	"strings"
+	"text/template"
 
 	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"github.com/AZhur771/wg-grpc-api/internal/dto"
@@ -52,8 +52,8 @@ func (ps *PeerService) Add(ctx context.Context, addPeerDTO dto.AddPeerDTO) (*ent
 	}
 
 	peer := &entity.Peer{
-		PrivateKey:                  privateKey,
-		PublicKey:                   publicKey,
+		PrivateKey:                  entity.WgKey(privateKey),
+		PublicKey:                   entity.WgKey(publicKey),
 		PersistentKeepaliveInterval: addPeerDTO.PersistentKeepAlive,
 		AllowedIPs:                  []string{allowedIPNet.String()},
 		Tags:                        addPeerDTO.Tags,
@@ -65,10 +65,11 @@ func (ps *PeerService) Add(ctx context.Context, addPeerDTO dto.AddPeerDTO) (*ent
 
 	if addPeerDTO.AddPresharedKey {
 		peer.HasPresharedKey = true
-		peer.PresharedKey, err = wgtypes.GenerateKey()
+		presharedKey, err := wgtypes.GenerateKey()
 		if err != nil {
 			return nil, fmt.Errorf("peer service: %w", err)
 		}
+		peer.PresharedKey = entity.WgKey(presharedKey)
 	}
 
 	if err := peer.IsValid(); err != nil {
@@ -89,7 +90,7 @@ func (ps *PeerService) Add(ctx context.Context, addPeerDTO dto.AddPeerDTO) (*ent
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
 
-	wgpeer, err := ps.deviceService.GetPeer(peer.PublicKey)
+	wgpeer, err := ps.deviceService.GetPeer(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
@@ -111,15 +112,16 @@ func (ps *PeerService) Update(ctx context.Context, updatePeerDTO dto.UpdatePeerD
 
 	if peer.HasPresharedKey && updatePeerDTO.RemovePresharedKey {
 		peer.HasPresharedKey = false
-		peer.PresharedKey = wgtypes.Key{} // non-nil zero value key clears preshared key
+		peer.PresharedKey = entity.WgKey(wgtypes.Key{}) // non-nil zero value key clears preshared key
 	}
 
 	if !peer.HasPresharedKey && updatePeerDTO.AddPresharedKey {
 		peer.HasPresharedKey = true
-		peer.PresharedKey, err = wgtypes.GenerateKey()
+		presharedKey, err := wgtypes.GenerateKey()
 		if err != nil {
 			return nil, fmt.Errorf("peer service: %w", err)
 		}
+		peer.PresharedKey = entity.WgKey(presharedKey)
 	}
 
 	if err := peer.IsValid(); err != nil {
@@ -140,7 +142,7 @@ func (ps *PeerService) Update(ctx context.Context, updatePeerDTO dto.UpdatePeerD
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
 
-	wgpeer, err := ps.deviceService.GetPeer(peer.PublicKey)
+	wgpeer, err := ps.deviceService.GetPeer(wgtypes.Key(peer.PublicKey))
 	if err != nil {
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
@@ -175,7 +177,7 @@ func (ps *PeerService) Get(ctx context.Context, id uuid.UUID) (*entity.Peer, err
 	}
 
 	if peer.IsEnabled {
-		wgpeer, err := ps.deviceService.GetPeer(peer.PublicKey)
+		wgpeer, err := ps.deviceService.GetPeer(wgtypes.Key(peer.PublicKey))
 		if err != nil {
 			return nil, fmt.Errorf("peer service: %w", err)
 		}
@@ -219,7 +221,7 @@ func (ps *PeerService) GetAll(ctx context.Context, getPeersRequest dto.GetPeersR
 
 	for idx, peer := range peers {
 		if peer.IsEnabled {
-			wgPeer, ok := wgPeersMap[peer.PublicKey]
+			wgPeer, ok := wgPeersMap[wgtypes.Key(peer.PublicKey)]
 			if ok {
 				peers[idx] = peer.PopulateDynamicFields(&wgPeer)
 			} else {
@@ -320,10 +322,13 @@ func (ps *PeerService) DownloadConfig(ctx context.Context, id uuid.UUID) (dto.Do
 
 		// peer data (device)
 		PeerPublicKey:       device.PublicKey.String(),
-		PeerPresharedKey:    peer.PresharedKey.String(),
 		PeerEndpoint:        fmt.Sprintf("%s:%d", device.Endpoint, device.ListenPort),
 		PeerAllowedIPs:      []string{"0.0.0.0/0"},
 		PersistentKeepalive: int(peer.PersistentKeepaliveInterval.Seconds()),
+	}
+
+	if !peer.PresharedKey.IsEmpty() {
+		tmplData.PeerPresharedKey = peer.PresharedKey.String()
 	}
 
 	if err := t.Execute(&buf, tmplData); err != nil {

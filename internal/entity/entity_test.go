@@ -59,9 +59,9 @@ func generateTestPeer() (*entity.Peer, error) {
 
 	return &entity.Peer{
 		ID:                          id,
-		PrivateKey:                  privateKey,
-		PublicKey:                   publicKey,
-		PresharedKey:                presharedKey,
+		PrivateKey:                  entity.WgKey(privateKey),
+		PublicKey:                   entity.WgKey(publicKey),
+		PresharedKey:                entity.WgKey(presharedKey),
 		PersistentKeepaliveInterval: time.Second * 15,
 		AllowedIPs:                  allowedIPsMock,
 		HasPresharedKey:             true,
@@ -102,8 +102,8 @@ func TestEntityPeer_PopulateDynamicFields(t *testing.T) {
 	require.NoError(t, err)
 
 	wgTestPeer := &wgtypes.Peer{
-		PublicKey:                   testPeer.PublicKey,
-		PresharedKey:                testPeer.PresharedKey,
+		PublicKey:                   wgtypes.Key(testPeer.PublicKey),
+		PresharedKey:                wgtypes.Key(testPeer.PresharedKey),
 		Endpoint:                    endpoint,
 		PersistentKeepaliveInterval: time.Second * 15,
 		LastHandshakeTime:           lastHandshakeTimeMock,

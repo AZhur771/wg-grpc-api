@@ -54,7 +54,7 @@ func (ds *DeviceService) syncPeers(ctx context.Context) error {
 
 		peerInSync := false
 		for _, wgPeer := range wgPeers {
-			if peer.PublicKey == wgPeer.PublicKey {
+			if wgtypes.Key(peer.PublicKey) == wgPeer.PublicKey {
 				peerInSync = true
 				break
 			}

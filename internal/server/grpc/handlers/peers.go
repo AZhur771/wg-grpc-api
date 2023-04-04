@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"time"
 
 	wgpb "github.com/AZhur771/wg-grpc-api/gen"
 	"github.com/AZhur771/wg-grpc-api/internal/app"
@@ -14,7 +15,6 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -42,7 +42,7 @@ func (p *PeersImpl) AddPeer(ctx context.Context, addPeerRequest *wgpb.AddPeerReq
 			Description:         addPeerRequest.GetDescription(),
 			Tags:                addPeerRequest.GetTags(),
 			AddPresharedKey:     addPeerRequest.GetAddPresharedKey(),
-			PersistentKeepAlive: addPeerRequest.GetPersistentKeepAlive().AsDuration(),
+			PersistentKeepAlive: time.Duration(addPeerRequest.GetPersistentKeepAlive()) * time.Second,
 		},
 	)
 	if err != nil {
@@ -82,7 +82,7 @@ func (p *PeersImpl) UpdatePeer(ctx context.Context, updatePeerRequest *wgpb.Upda
 			Tags:                updatePeerRequest.GetTags(),
 			AddPresharedKey:     updatePeerRequest.GetAddPresharedKey(),
 			RemovePresharedKey:  updatePeerRequest.GetRemovePresharedKey(),
-			PersistentKeepAlive: updatePeerRequest.PersistentKeepAlive.AsDuration(),
+			PersistentKeepAlive: time.Duration(updatePeerRequest.GetPersistentKeepAlive()) * time.Second,
 		},
 	)
 
@@ -226,7 +226,7 @@ func mapEntityPeerToPbPeer(peer *entity.Peer) *wgpb.Peer {
 		Email:               peer.Email,
 		PublicKey:           peer.PublicKey.String(),
 		Endpoint:            peer.Endpoint.String(),
-		PersistentKeepAlive: durationpb.New(peer.PersistentKeepaliveInterval),
+		PersistentKeepAlive: int32(peer.PersistentKeepaliveInterval.Seconds()),
 		AllowedIps:          peer.AllowedIPs,
 		ProtocolVersion:     uint32(peer.ProtocolVersion),
 		ReceiveBytes:        peer.ReceiveBytes,

@@ -22,8 +22,8 @@ GRPC and Rest API to manage wireguard peers.
 
 
 ## TODO
-- [ ] Add unit tests.
+- [x] Fix enable/disable functionality.
+- [x] Add unit tests.
 - [ ] Add script to convert peer conf files to json.
 - [ ] Add docker compose examples.
 - [ ] Allow modifying more server options (PreUp/PostUp/PreDown/PostDown/DNS/MTU/ListenPort/Table).
-- [ ] Fix enable/disable functionality.

@@ -256,7 +256,8 @@
                   "type": "boolean"
                 },
                 "persistentKeepAlive": {
-                  "type": "string"
+                  "type": "integer",
+                  "format": "int32"
                 },
                 "description": {
                   "type": "string"
@@ -462,7 +463,8 @@
           "type": "boolean"
         },
         "persistentKeepAlive": {
-          "type": "string"
+          "type": "integer",
+          "format": "int32"
         },
         "description": {
           "type": "string"
@@ -570,7 +572,8 @@
           "type": "string"
         },
         "persistentKeepAlive": {
-          "type": "string"
+          "type": "integer",
+          "format": "int32"
         },
         "allowedIps": {
           "type": "array",

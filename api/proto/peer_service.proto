@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -179,7 +178,7 @@ message Peer {
   string email = 3;
   string public_key = 4;
   string endpoint = 5;
-  google.protobuf.Duration persistent_keep_alive = 6;
+  int32 persistent_keep_alive = 6;
   repeated string allowed_ips = 7;
   uint32 protocol_version = 8;
   int64 receive_bytes = 9;
@@ -198,7 +197,7 @@ message PeerIdRequest {
 
 message AddPeerRequest {
   bool add_preshared_key = 1;
-  google.protobuf.Duration persistent_keep_alive = 2;
+  int32 persistent_keep_alive = 2;
   string description = 3;
   repeated string tags = 5;
   string name = 6;
@@ -209,7 +208,7 @@ message UpdatePeerRequest {
   string id = 1;
   bool add_preshared_key = 2;
   bool remove_preshared_key = 3;
-  google.protobuf.Duration persistent_keep_alive = 4;
+  int32 persistent_keep_alive = 4;
   string description = 5;
   repeated string tags = 6;
   string name = 7;

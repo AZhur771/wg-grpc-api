@@ -51,9 +51,9 @@ func generateMockPeer() (*entity.Peer, error) {
 		ID:                          uuid.New(),
 		Name:                        "Test peer",
 		Email:                       "email@example.com",
-		PrivateKey:                  privateKey,
-		PublicKey:                   privateKey.PublicKey(),
-		PresharedKey:                presharedKey,
+		PrivateKey:                  entity.WgKey(privateKey),
+		PublicKey:                   entity.WgKey(privateKey.PublicKey()),
+		PresharedKey:                entity.WgKey(presharedKey),
 		PersistentKeepaliveInterval: time.Second * 15,
 		LastHandshakeTime:           time.Now(),
 		AllowedIPs:                  []string{"10.0.0.3/32"},
@@ -249,7 +249,7 @@ func TestPeerService_UpdatePeer(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.addPresharedKey {
-				mockPeer.PresharedKey = wgtypes.Key{}
+				mockPeer.PresharedKey = entity.WgKey(wgtypes.Key{})
 				mockPeer.HasPresharedKey = false
 			}
 
@@ -337,7 +337,7 @@ func TestPeerService_GetPeer(t *testing.T) {
 			}
 
 			mockDeviceService.EXPECT().
-				GetPeer(mockPeer.PublicKey).
+				GetPeer(wgtypes.Key(mockPeer.PublicKey)).
 				Return(wgtypes.Peer{}, nil).
 				Times(expectedGetPeerCalls)
 
@@ -436,7 +436,7 @@ func TestPeerService_GetPeers(t *testing.T) {
 				mockPeers = append(mockPeers, mockPeer)
 
 				mockWgPeer := wgtypes.Peer{
-					PublicKey: mockPeer.PublicKey,
+					PublicKey: wgtypes.Key(mockPeer.PublicKey),
 				}
 				mockWgPeers = append(mockWgPeers, mockWgPeer)
 

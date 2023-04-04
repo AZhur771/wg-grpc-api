@@ -8,12 +8,12 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
-COPY .. ${CODE_DIR}
+COPY . ${CODE_DIR}
 
 ARG LDFLAGS
 RUN CGO_ENABLED=0 go build \
         -ldflags "$LDFLAGS" \
-        -o /opt/wg-grpc-api cmd/wg-grpc-api
+        -o /opt/wg-grpc-api ${CODE_DIR}/cmd/wg-grpc-api
 
 FROM alpine:3.9
 
