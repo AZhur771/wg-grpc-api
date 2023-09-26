@@ -73,7 +73,7 @@ func (s *Server) Run(ctx context.Context, cancel context.CancelFunc) {
 
 	go func() {
 		defer wg.Done()
-		log.Printf("grpc server is up and running at %s\n", s.grpcAddr)
+		log.Printf("grpc server is up and running at %s", s.grpcAddr)
 		if err := s.grpcSrv.Start(); err != nil {
 			s.logger.Error("failed to start grpc server", zap.Error(err))
 			cancel()
@@ -83,7 +83,7 @@ func (s *Server) Run(ctx context.Context, cancel context.CancelFunc) {
 	if s.gateway {
 		go func() {
 			defer wg.Done()
-			log.Printf("rest gateway server is up and running at %s'n", s.restAddr)
+			log.Printf("rest gateway server is up and running at %s", s.restAddr)
 			if s.swagger {
 				log.Printf("swagger docs available at http://%s/swagger-ui\n", s.restAddr)
 			}
