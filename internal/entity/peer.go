@@ -4,57 +4,89 @@ import (
 	"fmt"
 	"net"
 	"net/mail"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 )
 
-// Peer extends wgtypes.Peer.
 type Peer struct {
-	ID                          uuid.UUID     `json:"id"`
-	Name                        string        `json:"name"`
-	Email                       string        `json:"email"`
-	PrivateKey                  WgKey         `json:"privateKey"`
-	PublicKey                   WgKey         `json:"publicKey"`
-	PresharedKey                WgKey         `json:"presharedKey"`
-	Endpoint                    *net.UDPAddr  `json:"-"`
-	PersistentKeepaliveInterval time.Duration `json:"persistentKeepAliveInterval"`
-	LastHandshakeTime           time.Time     `json:"-"`
-	ReceiveBytes                int64         `json:"-"`
-	TransmitBytes               int64         `json:"-"`
-	AllowedIPs                  []string      `json:"allowedIps"`
-	ProtocolVersion             int           `json:"-"`
-	HasPresharedKey             bool          `json:"hasPresharedKey"`
-	IsEnabled                   bool          `json:"isEnabled"`
-	IsActive                    bool          `json:"-"`
-	Description                 string        `json:"description"`
-	Tags                        []string      `json:"tags"`
+	ID                          uuid.UUID
+	DeviceID                    uuid.UUID
+	Name                        string
+	Email                       string
+	PrivateKey                  wgtypes.Key
+	PublicKey                   wgtypes.Key
+	PresharedKey                wgtypes.Key
+	Endpoint                    *net.UDPAddr
+	PersistentKeepaliveInterval time.Duration
+	LastHandshakeTime           time.Time
+	ReceiveBytes                int64
+	TransmitBytes               int64
+	AllowedIPs                  []string
+	DNS                         string
+	MTU                         int
+	ProtocolVersion             int
+	HasPresharedKey             bool
+	IsEnabled                   bool
+	IsActive                    bool
+	Description                 string
 }
 
-func (p *Peer) IsValid() error {
+func (p *Peer) IsValid() []*errdetails.BadRequest_FieldViolation {
+	errors := make([]*errdetails.BadRequest_FieldViolation, 0)
+
 	if len(p.Name) < 1 || len(p.Name) > 20 {
-		return fmt.Errorf("peer: name should be between 1 and 20 characters")
+		errors = append(errors, &errdetails.BadRequest_FieldViolation{
+			Field:       "name",
+			Description: "name should be between 1 and 20 characters",
+		})
 	}
 
 	if p.Email != "" {
 		_, err := mail.ParseAddress(p.Email)
 		if err != nil {
-			return fmt.Errorf("peer: email %s is invalid", p.Email)
+			errors = append(errors, &errdetails.BadRequest_FieldViolation{
+				Field:       "email",
+				Description: fmt.Sprintf("email %s is invalid", p.Email),
+			})
 		}
+	}
+
+	if p.MTU == 0 {
+		errors = append(errors, &errdetails.BadRequest_FieldViolation{
+			Field:       "mtu",
+			Description: "mtu should not be empty",
+		})
+	}
+
+	if p.DNS != "" {
+		for _, addr := range strings.Split(p.DNS, ",") {
+			ip := net.ParseIP(addr)
+			if ip == nil {
+				errors = append(errors, &errdetails.BadRequest_FieldViolation{
+					Field:       "dns",
+					Description: fmt.Sprintf("wrong DNS: %s", addr),
+				})
+			}
+		}
+	} else {
+		errors = append(errors, &errdetails.BadRequest_FieldViolation{
+			Field:       "dns",
+			Description: "dns should not be empty",
+		})
 	}
 
 	if len(p.Description) > 40 {
-		return fmt.Errorf("peer: description should be 40 characters max")
+		errors = append(errors, &errdetails.BadRequest_FieldViolation{
+			Field:       "description",
+			Description: "description should be 40 characters max",
+		})
 	}
 
-	for _, tag := range p.Tags {
-		if len(tag) > 20 {
-			return fmt.Errorf("peer: tag should be 20 characters max")
-		}
-	}
-
-	return nil
+	return errors
 }
 
 func (p *Peer) PopulateDynamicFields(wgpeer *wgtypes.Peer) *Peer {
@@ -74,11 +106,9 @@ func (p *Peer) ToPeerConfig() (*wgtypes.PeerConfig, error) {
 		return nil, fmt.Errorf("peer: %w", err)
 	}
 
-	wgPresharedKey := wgtypes.Key(p.PresharedKey)
-
 	return &wgtypes.PeerConfig{
-		PublicKey:                   wgtypes.Key(p.PublicKey),
-		PresharedKey:                &wgPresharedKey,
+		PublicKey:                   p.PublicKey,
+		PresharedKey:                &p.PresharedKey,
 		Endpoint:                    p.Endpoint,
 		PersistentKeepaliveInterval: &p.PersistentKeepaliveInterval,
 		AllowedIPs:                  allowedIPs,

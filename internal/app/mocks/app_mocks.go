@@ -6,106 +6,16 @@ package app_mocks
 
 import (
 	context "context"
+	sql "database/sql"
 	reflect "reflect"
 
 	dto "github.com/AZhur771/wg-grpc-api/internal/dto"
 	entity "github.com/AZhur771/wg-grpc-api/internal/entity"
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
-	zapcore "go.uber.org/zap/zapcore"
+	sqlx "github.com/jmoiron/sqlx"
 	wgtypes "golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
-
-// MockLogger is a mock of Logger interface.
-type MockLogger struct {
-	ctrl     *gomock.Controller
-	recorder *MockLoggerMockRecorder
-}
-
-// MockLoggerMockRecorder is the mock recorder for MockLogger.
-type MockLoggerMockRecorder struct {
-	mock *MockLogger
-}
-
-// NewMockLogger creates a new mock instance.
-func NewMockLogger(ctrl *gomock.Controller) *MockLogger {
-	mock := &MockLogger{ctrl: ctrl}
-	mock.recorder = &MockLoggerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockLogger) EXPECT() *MockLoggerMockRecorder {
-	return m.recorder
-}
-
-// Debug mocks base method.
-func (m *MockLogger) Debug(arg0 string, arg1 ...zapcore.Field) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Debug", varargs...)
-}
-
-// Debug indicates an expected call of Debug.
-func (mr *MockLoggerMockRecorder) Debug(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0}, arg1...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Debug", reflect.TypeOf((*MockLogger)(nil).Debug), varargs...)
-}
-
-// Error mocks base method.
-func (m *MockLogger) Error(arg0 string, arg1 ...zapcore.Field) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Error", varargs...)
-}
-
-// Error indicates an expected call of Error.
-func (mr *MockLoggerMockRecorder) Error(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0}, arg1...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockLogger)(nil).Error), varargs...)
-}
-
-// Info mocks base method.
-func (m *MockLogger) Info(arg0 string, arg1 ...zapcore.Field) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Info", varargs...)
-}
-
-// Info indicates an expected call of Info.
-func (mr *MockLoggerMockRecorder) Info(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0}, arg1...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockLogger)(nil).Info), varargs...)
-}
-
-// Warn mocks base method.
-func (m *MockLogger) Warn(arg0 string, arg1 ...zapcore.Field) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "Warn", varargs...)
-}
-
-// Warn indicates an expected call of Warn.
-func (mr *MockLoggerMockRecorder) Warn(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0}, arg1...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warn", reflect.TypeOf((*MockLogger)(nil).Warn), varargs...)
-}
 
 // MockWgCtrl is a mock of WgCtrl interface.
 type MockWgCtrl struct {
@@ -212,18 +122,18 @@ func (m *MockPeerService) EXPECT() *MockPeerServiceMockRecorder {
 }
 
 // Add mocks base method.
-func (m *MockPeerService) Add(ctx context.Context, addPeerDTO dto.AddPeerDTO) (*entity.Peer, error) {
+func (m *MockPeerService) Add(ctx context.Context, dt dto.AddPeerDTO) (*entity.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", ctx, addPeerDTO)
+	ret := m.ctrl.Call(m, "Add", ctx, dt)
 	ret0, _ := ret[0].(*entity.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockPeerServiceMockRecorder) Add(ctx, addPeerDTO interface{}) *gomock.Call {
+func (mr *MockPeerServiceMockRecorder) Add(ctx, dt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockPeerService)(nil).Add), ctx, addPeerDTO)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockPeerService)(nil).Add), ctx, dt)
 }
 
 // Disable mocks base method.
@@ -300,18 +210,18 @@ func (mr *MockPeerServiceMockRecorder) Get(ctx, id interface{}) *gomock.Call {
 }
 
 // GetAll mocks base method.
-func (m *MockPeerService) GetAll(ctx context.Context, getPeersDTO dto.GetPeersRequestDTO) (dto.GetPeersResponseDTO, error) {
+func (m *MockPeerService) GetAll(ctx context.Context, dt dto.GetPeersRequestDTO) (dto.GetPeersResponseDTO, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, getPeersDTO)
+	ret := m.ctrl.Call(m, "GetAll", ctx, dt)
 	ret0, _ := ret[0].(dto.GetPeersResponseDTO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAll indicates an expected call of GetAll.
-func (mr *MockPeerServiceMockRecorder) GetAll(ctx, getPeersDTO interface{}) *gomock.Call {
+func (mr *MockPeerServiceMockRecorder) GetAll(ctx, dt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockPeerService)(nil).GetAll), ctx, getPeersDTO)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockPeerService)(nil).GetAll), ctx, dt)
 }
 
 // Remove mocks base method.
@@ -329,18 +239,18 @@ func (mr *MockPeerServiceMockRecorder) Remove(ctx, id interface{}) *gomock.Call 
 }
 
 // Update mocks base method.
-func (m *MockPeerService) Update(ctx context.Context, updatePeerDTO dto.UpdatePeerDTO) (*entity.Peer, error) {
+func (m *MockPeerService) Update(ctx context.Context, dt dto.UpdatePeerDTO) (*entity.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, updatePeerDTO)
+	ret := m.ctrl.Call(m, "Update", ctx, dt)
 	ret0, _ := ret[0].(*entity.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockPeerServiceMockRecorder) Update(ctx, updatePeerDTO interface{}) *gomock.Call {
+func (mr *MockPeerServiceMockRecorder) Update(ctx, dt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerService)(nil).Update), ctx, updatePeerDTO)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerService)(nil).Update), ctx, dt)
 }
 
 // MockDeviceService is a mock of DeviceService interface.
@@ -366,216 +276,389 @@ func (m *MockDeviceService) EXPECT() *MockDeviceServiceMockRecorder {
 	return m.recorder
 }
 
-// AddPeer mocks base method.
-func (m *MockDeviceService) AddPeer(peer wgtypes.PeerConfig) error {
+// Add mocks base method.
+func (m *MockDeviceService) Add(ctx context.Context, dt dto.AddDeviceDTO) (*entity.Device, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddPeer", peer)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddPeer indicates an expected call of AddPeer.
-func (mr *MockDeviceServiceMockRecorder) AddPeer(peer interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPeer", reflect.TypeOf((*MockDeviceService)(nil).AddPeer), peer)
-}
-
-// GetDevice mocks base method.
-func (m *MockDeviceService) GetDevice() (*entity.Device, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDevice")
+	ret := m.ctrl.Call(m, "Add", ctx, dt)
 	ret0, _ := ret[0].(*entity.Device)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetDevice indicates an expected call of GetDevice.
-func (mr *MockDeviceServiceMockRecorder) GetDevice() *gomock.Call {
+// Add indicates an expected call of Add.
+func (mr *MockDeviceServiceMockRecorder) Add(ctx, dt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevice", reflect.TypeOf((*MockDeviceService)(nil).GetDevice))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockDeviceService)(nil).Add), ctx, dt)
 }
 
-// GetPeer mocks base method.
-func (m *MockDeviceService) GetPeer(publicKey wgtypes.Key) (wgtypes.Peer, error) {
+// ConfigureDevice mocks base method.
+func (m *MockDeviceService) ConfigureDevice(device string, config wgtypes.PeerConfig) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPeer", publicKey)
+	ret := m.ctrl.Call(m, "ConfigureDevice", device, config)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ConfigureDevice indicates an expected call of ConfigureDevice.
+func (mr *MockDeviceServiceMockRecorder) ConfigureDevice(device, config interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigureDevice", reflect.TypeOf((*MockDeviceService)(nil).ConfigureDevice), device, config)
+}
+
+// Get mocks base method.
+func (m *MockDeviceService) Get(ctx context.Context, id uuid.UUID) (*entity.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret0, _ := ret[0].(*entity.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockDeviceServiceMockRecorder) Get(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDeviceService)(nil).Get), ctx, id)
+}
+
+// GetAll mocks base method.
+func (m *MockDeviceService) GetAll(ctx context.Context, dt dto.GetDevicesRequestDTO) (dto.GetDevicesResponseDTO, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAll", ctx, dt)
+	ret0, _ := ret[0].(dto.GetDevicesResponseDTO)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAll indicates an expected call of GetAll.
+func (mr *MockDeviceServiceMockRecorder) GetAll(ctx, dt interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockDeviceService)(nil).GetAll), ctx, dt)
+}
+
+// GetConfiguredPeer mocks base method.
+func (m *MockDeviceService) GetConfiguredPeer(dev string, publicKey wgtypes.Key) (wgtypes.Peer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfiguredPeer", dev, publicKey)
 	ret0, _ := ret[0].(wgtypes.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPeer indicates an expected call of GetPeer.
-func (mr *MockDeviceServiceMockRecorder) GetPeer(publicKey interface{}) *gomock.Call {
+// GetConfiguredPeer indicates an expected call of GetConfiguredPeer.
+func (mr *MockDeviceServiceMockRecorder) GetConfiguredPeer(dev, publicKey interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeer", reflect.TypeOf((*MockDeviceService)(nil).GetPeer), publicKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfiguredPeer", reflect.TypeOf((*MockDeviceService)(nil).GetConfiguredPeer), dev, publicKey)
 }
 
-// GetPeers mocks base method.
-func (m *MockDeviceService) GetPeers() ([]wgtypes.Peer, error) {
+// GetConfiguredPeers mocks base method.
+func (m *MockDeviceService) GetConfiguredPeers(dev string) ([]wgtypes.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPeers")
+	ret := m.ctrl.Call(m, "GetConfiguredPeers", dev)
 	ret0, _ := ret[0].([]wgtypes.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPeers indicates an expected call of GetPeers.
-func (mr *MockDeviceServiceMockRecorder) GetPeers() *gomock.Call {
+// GetConfiguredPeers indicates an expected call of GetConfiguredPeers.
+func (mr *MockDeviceServiceMockRecorder) GetConfiguredPeers(dev interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeers", reflect.TypeOf((*MockDeviceService)(nil).GetPeers))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfiguredPeers", reflect.TypeOf((*MockDeviceService)(nil).GetConfiguredPeers), dev)
 }
 
-// RemovePeer mocks base method.
-func (m *MockDeviceService) RemovePeer(peer wgtypes.PeerConfig) error {
+// Remove mocks base method.
+func (m *MockDeviceService) Remove(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemovePeer", peer)
+	ret := m.ctrl.Call(m, "Remove", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// RemovePeer indicates an expected call of RemovePeer.
-func (mr *MockDeviceServiceMockRecorder) RemovePeer(peer interface{}) *gomock.Call {
+// Remove indicates an expected call of Remove.
+func (mr *MockDeviceServiceMockRecorder) Remove(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemovePeer", reflect.TypeOf((*MockDeviceService)(nil).RemovePeer), peer)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockDeviceService)(nil).Remove), ctx, id)
 }
 
-// Setup mocks base method.
-func (m *MockDeviceService) Setup(ctx context.Context, name, endpoint, address string) error {
+// Update mocks base method.
+func (m *MockDeviceService) Update(ctx context.Context, dt dto.UpdateDeviceDTO) (*entity.Device, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Setup", ctx, name, endpoint, address)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "Update", ctx, dt)
+	ret0, _ := ret[0].(*entity.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// Setup indicates an expected call of Setup.
-func (mr *MockDeviceServiceMockRecorder) Setup(ctx, name, endpoint, address interface{}) *gomock.Call {
+// Update indicates an expected call of Update.
+func (mr *MockDeviceServiceMockRecorder) Update(ctx, dt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setup", reflect.TypeOf((*MockDeviceService)(nil).Setup), ctx, name, endpoint, address)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDeviceService)(nil).Update), ctx, dt)
 }
 
-// UpdatePeer mocks base method.
-func (m *MockDeviceService) UpdatePeer(peer wgtypes.PeerConfig) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatePeer", peer)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdatePeer indicates an expected call of UpdatePeer.
-func (mr *MockDeviceServiceMockRecorder) UpdatePeer(peer interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePeer", reflect.TypeOf((*MockDeviceService)(nil).UpdatePeer), peer)
-}
-
-// MockPeerStorage is a mock of PeerStorage interface.
-type MockPeerStorage struct {
+// MockPeerRepo is a mock of PeerRepo interface.
+type MockPeerRepo struct {
 	ctrl     *gomock.Controller
-	recorder *MockPeerStorageMockRecorder
+	recorder *MockPeerRepoMockRecorder
 }
 
-// MockPeerStorageMockRecorder is the mock recorder for MockPeerStorage.
-type MockPeerStorageMockRecorder struct {
-	mock *MockPeerStorage
+// MockPeerRepoMockRecorder is the mock recorder for MockPeerRepo.
+type MockPeerRepoMockRecorder struct {
+	mock *MockPeerRepo
 }
 
-// NewMockPeerStorage creates a new mock instance.
-func NewMockPeerStorage(ctrl *gomock.Controller) *MockPeerStorage {
-	mock := &MockPeerStorage{ctrl: ctrl}
-	mock.recorder = &MockPeerStorageMockRecorder{mock}
+// NewMockPeerRepo creates a new mock instance.
+func NewMockPeerRepo(ctrl *gomock.Controller) *MockPeerRepo {
+	mock := &MockPeerRepo{ctrl: ctrl}
+	mock.recorder = &MockPeerRepoMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockPeerStorage) EXPECT() *MockPeerStorageMockRecorder {
+func (m *MockPeerRepo) EXPECT() *MockPeerRepoMockRecorder {
 	return m.recorder
 }
 
 // Add mocks base method.
-func (m *MockPeerStorage) Add(ctx context.Context, peer *entity.Peer) (*entity.Peer, error) {
+func (m *MockPeerRepo) Add(ctx context.Context, tx *sqlx.Tx, peer *entity.Peer) (*entity.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", ctx, peer)
+	ret := m.ctrl.Call(m, "Add", ctx, tx, peer)
 	ret0, _ := ret[0].(*entity.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockPeerStorageMockRecorder) Add(ctx, peer interface{}) *gomock.Call {
+func (mr *MockPeerRepoMockRecorder) Add(ctx, tx, peer interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockPeerStorage)(nil).Add), ctx, peer)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockPeerRepo)(nil).Add), ctx, tx, peer)
 }
 
-// CountAll mocks base method.
-func (m *MockPeerStorage) CountAll(ctx context.Context) (int, error) {
+// BeginTxx mocks base method.
+func (m *MockPeerRepo) BeginTxx(ctx context.Context, options *sql.TxOptions) (*sqlx.Tx, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountAll", ctx)
+	ret := m.ctrl.Call(m, "BeginTxx", ctx, options)
+	ret0, _ := ret[0].(*sqlx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginTxx indicates an expected call of BeginTxx.
+func (mr *MockPeerRepoMockRecorder) BeginTxx(ctx, options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTxx", reflect.TypeOf((*MockPeerRepo)(nil).BeginTxx), ctx, options)
+}
+
+// Count mocks base method.
+func (m *MockPeerRepo) Count(ctx context.Context, tx *sqlx.Tx, deviceID uuid.UUID) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Count", ctx, tx, deviceID)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CountAll indicates an expected call of CountAll.
-func (mr *MockPeerStorageMockRecorder) CountAll(ctx interface{}) *gomock.Call {
+// Count indicates an expected call of Count.
+func (mr *MockPeerRepoMockRecorder) Count(ctx, tx, deviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAll", reflect.TypeOf((*MockPeerStorage)(nil).CountAll), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockPeerRepo)(nil).Count), ctx, tx, deviceID)
 }
 
 // Get mocks base method.
-func (m *MockPeerStorage) Get(ctx context.Context, id uuid.UUID) (*entity.Peer, error) {
+func (m *MockPeerRepo) Get(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*entity.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret := m.ctrl.Call(m, "Get", ctx, tx, id)
 	ret0, _ := ret[0].(*entity.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockPeerStorageMockRecorder) Get(ctx, id interface{}) *gomock.Call {
+func (mr *MockPeerRepoMockRecorder) Get(ctx, tx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPeerStorage)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockPeerRepo)(nil).Get), ctx, tx, id)
 }
 
 // GetAll mocks base method.
-func (m *MockPeerStorage) GetAll(ctx context.Context, skip, limit int) ([]*entity.Peer, error) {
+func (m *MockPeerRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, search string, deviceID uuid.UUID) ([]*entity.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx, skip, limit)
+	ret := m.ctrl.Call(m, "GetAll", ctx, tx, skip, limit, search, deviceID)
 	ret0, _ := ret[0].([]*entity.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAll indicates an expected call of GetAll.
-func (mr *MockPeerStorageMockRecorder) GetAll(ctx, skip, limit interface{}) *gomock.Call {
+func (mr *MockPeerRepoMockRecorder) GetAll(ctx, tx, skip, limit, search, deviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockPeerStorage)(nil).GetAll), ctx, skip, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockPeerRepo)(nil).GetAll), ctx, tx, skip, limit, search, deviceID)
 }
 
 // Remove mocks base method.
-func (m *MockPeerStorage) Remove(ctx context.Context, id uuid.UUID) (*entity.Peer, error) {
+func (m *MockPeerRepo) Remove(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Remove", ctx, id)
-	ret0, _ := ret[0].(*entity.Peer)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "Remove", ctx, tx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Remove indicates an expected call of Remove.
-func (mr *MockPeerStorageMockRecorder) Remove(ctx, id interface{}) *gomock.Call {
+func (mr *MockPeerRepoMockRecorder) Remove(ctx, tx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockPeerStorage)(nil).Remove), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockPeerRepo)(nil).Remove), ctx, tx, id)
 }
 
 // Update mocks base method.
-func (m *MockPeerStorage) Update(ctx context.Context, peer *entity.Peer) (*entity.Peer, error) {
+func (m *MockPeerRepo) Update(ctx context.Context, tx *sqlx.Tx, peer *entity.Peer) (*entity.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, peer)
+	ret := m.ctrl.Call(m, "Update", ctx, tx, peer)
 	ret0, _ := ret[0].(*entity.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockPeerStorageMockRecorder) Update(ctx, peer interface{}) *gomock.Call {
+func (mr *MockPeerRepoMockRecorder) Update(ctx, tx, peer interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerStorage)(nil).Update), ctx, peer)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerRepo)(nil).Update), ctx, tx, peer)
+}
+
+// MockDeviceRepo is a mock of DeviceRepo interface.
+type MockDeviceRepo struct {
+	ctrl     *gomock.Controller
+	recorder *MockDeviceRepoMockRecorder
+}
+
+// MockDeviceRepoMockRecorder is the mock recorder for MockDeviceRepo.
+type MockDeviceRepoMockRecorder struct {
+	mock *MockDeviceRepo
+}
+
+// NewMockDeviceRepo creates a new mock instance.
+func NewMockDeviceRepo(ctrl *gomock.Controller) *MockDeviceRepo {
+	mock := &MockDeviceRepo{ctrl: ctrl}
+	mock.recorder = &MockDeviceRepoMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDeviceRepo) EXPECT() *MockDeviceRepoMockRecorder {
+	return m.recorder
+}
+
+// Add mocks base method.
+func (m *MockDeviceRepo) Add(ctx context.Context, tx *sqlx.Tx, dev *entity.Device) (*entity.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Add", ctx, tx, dev)
+	ret0, _ := ret[0].(*entity.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Add indicates an expected call of Add.
+func (mr *MockDeviceRepoMockRecorder) Add(ctx, tx, dev interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockDeviceRepo)(nil).Add), ctx, tx, dev)
+}
+
+// BeginTxx mocks base method.
+func (m *MockDeviceRepo) BeginTxx(ctx context.Context, options *sql.TxOptions) (*sqlx.Tx, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BeginTxx", ctx, options)
+	ret0, _ := ret[0].(*sqlx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginTxx indicates an expected call of BeginTxx.
+func (mr *MockDeviceRepoMockRecorder) BeginTxx(ctx, options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTxx", reflect.TypeOf((*MockDeviceRepo)(nil).BeginTxx), ctx, options)
+}
+
+// Count mocks base method.
+func (m *MockDeviceRepo) Count(ctx context.Context, tx *sqlx.Tx) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Count", ctx, tx)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Count indicates an expected call of Count.
+func (mr *MockDeviceRepoMockRecorder) Count(ctx, tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockDeviceRepo)(nil).Count), ctx, tx)
+}
+
+// GenerateAddress mocks base method.
+func (m *MockDeviceRepo) GenerateAddress(ctx context.Context, tx *sqlx.Tx, dev *entity.Device) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateAddress", ctx, tx, dev)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateAddress indicates an expected call of GenerateAddress.
+func (mr *MockDeviceRepoMockRecorder) GenerateAddress(ctx, tx, dev interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateAddress", reflect.TypeOf((*MockDeviceRepo)(nil).GenerateAddress), ctx, tx, dev)
+}
+
+// Get mocks base method.
+func (m *MockDeviceRepo) Get(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*entity.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, tx, id)
+	ret0, _ := ret[0].(*entity.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockDeviceRepoMockRecorder) Get(ctx, tx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDeviceRepo)(nil).Get), ctx, tx, id)
+}
+
+// GetAll mocks base method.
+func (m *MockDeviceRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, search string) ([]*entity.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAll", ctx, tx, skip, limit, search)
+	ret0, _ := ret[0].([]*entity.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAll indicates an expected call of GetAll.
+func (mr *MockDeviceRepoMockRecorder) GetAll(ctx, tx, skip, limit, search interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockDeviceRepo)(nil).GetAll), ctx, tx, skip, limit, search)
+}
+
+// Remove mocks base method.
+func (m *MockDeviceRepo) Remove(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Remove", ctx, tx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Remove indicates an expected call of Remove.
+func (mr *MockDeviceRepoMockRecorder) Remove(ctx, tx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockDeviceRepo)(nil).Remove), ctx, tx, id)
+}
+
+// Update mocks base method.
+func (m *MockDeviceRepo) Update(ctx context.Context, tx *sqlx.Tx, dev *entity.Device) (*entity.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, tx, dev)
+	ret0, _ := ret[0].(*entity.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockDeviceRepoMockRecorder) Update(ctx, tx, dev interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDeviceRepo)(nil).Update), ctx, tx, dev)
 }

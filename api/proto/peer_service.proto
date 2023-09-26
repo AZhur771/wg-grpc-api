@@ -6,6 +6,8 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 
 import "google/api/annotations.proto";
 
+import "common_entities.proto";
+
 option go_package = "./;wgpb";
 
 service PeerService {
@@ -13,7 +15,7 @@ service PeerService {
     description: "Service to configure wireguard peers"
   };
 
-  rpc AddPeer(AddPeerRequest) returns (PeerIdRequest) {
+  rpc AddPeer(AddPeerRequest) returns (EntityIdRequest) {
     option (google.api.http) = {
       post: "/api/peers"
       body: "*"
@@ -31,7 +33,7 @@ service PeerService {
     };
   };
 
-  rpc RemovePeer(PeerIdRequest) returns (google.protobuf.Empty) {
+  rpc RemovePeer(EntityIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/api/peers/{id}"
       body: "*"
@@ -67,7 +69,7 @@ service PeerService {
     };
   };
 
-  rpc GetPeer(PeerIdRequest) returns (Peer) {
+  rpc GetPeer(EntityIdRequest) returns (Peer) {
     option (google.api.http) = {
       get: "/api/peers/{id}"
     };
@@ -101,7 +103,7 @@ service PeerService {
     };
   };
 
-  rpc EnablePeer(PeerIdRequest) returns (google.protobuf.Empty) {
+  rpc EnablePeer(EntityIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/peers/{id}/enable"
       body: "*"
@@ -119,7 +121,7 @@ service PeerService {
     };
   };
 
-  rpc DisablePeer(PeerIdRequest) returns (google.protobuf.Empty) {
+  rpc DisablePeer(EntityIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/peers/{id}/disable"
       body: "*"
@@ -137,7 +139,7 @@ service PeerService {
     };
   };
 
-  rpc DownloadPeerConfig(PeerIdRequest) returns (DownloadFileResponse) {
+  rpc DownloadPeerConfig(EntityIdRequest) returns (DownloadFileResponse) {
     option (google.api.http) = {
       get: "/api/peers/{id}/config"
     };
@@ -154,7 +156,7 @@ service PeerService {
     };
   };
 
-  rpc DownloadPeerQRCode(PeerIdRequest) returns (DownloadFileResponse) {
+  rpc DownloadPeerQRCode(EntityIdRequest) returns (DownloadFileResponse) {
     option (google.api.http) = {
       get: "/api/peers/{id}/qr"
     };
@@ -174,34 +176,49 @@ service PeerService {
 
 message Peer {
   string id = 1;
-  string name = 2;
-  string email = 3;
-  string public_key = 4;
-  string endpoint = 5;
-  int32 persistent_keep_alive = 6;
-  repeated string allowed_ips = 7;
-  uint32 protocol_version = 8;
-  int64 receive_bytes = 9;
-  int64 transmit_bytes = 10;
-  google.protobuf.Timestamp last_handshake = 11;
-  bool has_preshared_key = 12;
-  bool is_enabled = 13;
-  bool is_active = 14;
-  repeated string tags = 15;
+  string device_id = 2;
+  string name = 3;
+  string email = 4;
+  string public_key = 5;
+  string endpoint = 6;
+  int32 persistent_keep_alive = 7;
+  repeated string allowed_ips = 8;
+  uint32 protocol_version = 9;
+  int64 receive_bytes = 10;
+  int64 transmit_bytes = 11;
+  google.protobuf.Timestamp last_handshake = 12;
+  bool has_preshared_key = 13;
+  bool is_enabled = 14;
+  bool is_active = 15;
   string description = 16;
+  string dns = 17;
+  int32 mtu = 18;
 }
 
-message PeerIdRequest {
+message PeerAbridged {
   string id = 1;
+  string device_id = 2;
+  string name = 3;
+  string email = 4;
+  string public_key = 5;
+  int32 persistent_keep_alive = 6;
+  repeated string allowed_ips = 7;
+  bool has_preshared_key = 8;
+  bool is_enabled = 9;
+  string description = 10;
+  string dns = 11;
+  int32 mtu = 12;
 }
 
 message AddPeerRequest {
-  bool add_preshared_key = 1;
-  int32 persistent_keep_alive = 2;
-  string description = 3;
-  repeated string tags = 5;
-  string name = 6;
-  string email = 7;
+  string device_id = 1;
+  bool add_preshared_key = 2;
+  int32 persistent_keep_alive = 3;
+  string description = 4;
+  string name = 5;
+  string email = 6;
+  string dns = 7;
+  int32 mtu = 8;
 }
 
 message UpdatePeerRequest {
@@ -210,18 +227,21 @@ message UpdatePeerRequest {
   bool remove_preshared_key = 3;
   int32 persistent_keep_alive = 4;
   string description = 5;
-  repeated string tags = 6;
-  string name = 7;
-  string email = 8;
+  string name = 6;
+  string email = 7;
+  string dns = 8;
+  int32 mtu = 9;
 }
 
 message GetPeersRequest {
   int32 skip = 1;
   int32 limit = 2;
+  string search = 3;
+  string device_id = 4;
 }
 
 message GetPeersResponse {
-  repeated Peer peers = 1;
+  repeated PeerAbridged peers = 1;
   int32 total = 2;
   bool has_next = 3;
 }

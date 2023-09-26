@@ -24,4 +24,5 @@ GRPC and Rest API to manage wireguard peers.
 ## TODO
 - [x] Fix enable/disable functionality.
 - [x] Add unit tests.
-- [ ] Allow modifying more server options (PreUp/PostUp/PreDown/PostDown/DNS/MTU/ListenPort/Table).
+- [x] Allow modifying more server options (PreUp/PostUp/PreDown/PostDown/DNS/MTU/ListenPort etc.).
+- [x] Add TLS.

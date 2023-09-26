@@ -8,12 +8,14 @@ import (
 )
 
 type AddPeerDTO struct {
+	DeviceID            uuid.UUID
 	Name                string
 	Email               string
 	AddPresharedKey     bool
 	PersistentKeepAlive time.Duration
-	Tags                []string
 	Description         string
+	DNS                 string
+	MTU                 int
 }
 
 type UpdatePeerDTO struct {
@@ -23,8 +25,9 @@ type UpdatePeerDTO struct {
 	AddPresharedKey     bool
 	RemovePresharedKey  bool
 	PersistentKeepAlive time.Duration
-	Tags                []string
 	Description         string
+	DNS                 string
+	MTU                 int
 }
 
 type DownloadFileDTO struct {
@@ -33,21 +36,23 @@ type DownloadFileDTO struct {
 	Data []byte
 }
 
-type GetPeersRequestDTO struct {
-	Skip  int
-	Limit int
-}
-
-func (gp *GetPeersRequestDTO) IsValid() bool {
-	if gp.Skip < 0 || gp.Limit < 0 {
-		return false
-	}
-
-	return true
-}
-
 type GetPeersResponseDTO struct {
 	Peers   []*entity.Peer
 	Total   int
 	HasNext bool
+}
+
+type GetPeersRequestDTO struct {
+	DeviceID uuid.UUID
+	Skip     int
+	Limit    int
+	Search   string
+}
+
+func (p *GetPeersRequestDTO) IsValid() bool {
+	if p.Skip < 0 || p.Limit < 0 {
+		return false
+	}
+
+	return true
 }

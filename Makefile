@@ -30,14 +30,22 @@ go-version:
 	which go && go version
 
 build:
-	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/wg-grpc-api
+	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" .
 
 run: build
 	$(BIN)
 
 app-version: build
 	$(BIN) version
+
 test:
 	go test -race ./...
+
+test-proto:
+	docker run --net=host --rm -v "$(pwd):/mount:ro" \
+		ghcr.io/ktr0731/evans:latest \
+		--port 51821 \
+		-r \
+		repl
 
 .PHONY: generate protoc-version install-lint-deps lint go-version

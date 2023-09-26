@@ -1,7 +1,6 @@
 package entity_test
 
 import (
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -59,9 +58,9 @@ func generateTestPeer() (*entity.Peer, error) {
 
 	return &entity.Peer{
 		ID:                          id,
-		PrivateKey:                  entity.WgKey(privateKey),
-		PublicKey:                   entity.WgKey(publicKey),
-		PresharedKey:                entity.WgKey(presharedKey),
+		PrivateKey:                  privateKey,
+		PublicKey:                   publicKey,
+		PresharedKey:                presharedKey,
 		PersistentKeepaliveInterval: time.Second * 15,
 		AllowedIPs:                  allowedIPsMock,
 		HasPresharedKey:             true,
@@ -84,6 +83,7 @@ func generateTestDevice() (*entity.Device, error) {
 	return &entity.Device{
 		Name:          "wg0",
 		Type:          wgtypes.LinuxKernel,
+		Address:       "10.6.0.1/24",
 		PrivateKey:    privateKey,
 		PublicKey:     publicKey,
 		ListenPort:    51820,
@@ -102,8 +102,8 @@ func TestEntityPeer_PopulateDynamicFields(t *testing.T) {
 	require.NoError(t, err)
 
 	wgTestPeer := &wgtypes.Peer{
-		PublicKey:                   wgtypes.Key(testPeer.PublicKey),
-		PresharedKey:                wgtypes.Key(testPeer.PresharedKey),
+		PublicKey:                   testPeer.PublicKey,
+		PresharedKey:                testPeer.PresharedKey,
 		Endpoint:                    endpoint,
 		PersistentKeepaliveInterval: time.Second * 15,
 		LastHandshakeTime:           lastHandshakeTimeMock,
@@ -125,16 +125,26 @@ func TestEntityPeer_IsValid(t *testing.T) {
 	testPeer, err := generateTestPeer()
 	require.NoError(t, err)
 
-	require.Error(t, testPeer.IsValid(), "peer: name should be between 1 and 20 characters")
+	testPeer.Email = "invalid_email"
+
+	errors := testPeer.IsValid()
+	require.Equal(t, 4, len(errors))
 
 	testPeer.Name = "some_name"
-	require.NoError(t, testPeer.IsValid())
-
-	testPeer.Email = "invalid.email"
-	require.Error(t, testPeer.IsValid(), fmt.Sprintf("peer: email %s is invalid", testPeer.Email))
+	errors = testPeer.IsValid()
+	require.Equal(t, 3, len(errors))
 
 	testPeer.Email = "valid.email@example.com"
-	require.NoError(t, testPeer.IsValid())
+	errors = testPeer.IsValid()
+	require.Equal(t, 2, len(errors))
+
+	testPeer.MTU = 1414
+	errors = testPeer.IsValid()
+	require.Equal(t, 1, len(errors))
+
+	testPeer.DNS = "1.1.1.1"
+	errors = testPeer.IsValid()
+	require.Equal(t, 0, len(errors))
 }
 
 func TestEntityDevice_PopulateDynamicFields(t *testing.T) {
@@ -150,7 +160,9 @@ func TestEntityDevice_PopulateDynamicFields(t *testing.T) {
 		Peers: testPeers,
 	}
 
-	testDevice = testDevice.PopulateDynamicFields(wgTestDevice)
+	testDevice, err = testDevice.PopulateDynamicFields(wgTestDevice)
+	require.NoError(t, err)
+
 	require.Equal(t, testDevice.CurrentPeersCount, len(wgTestDevice.Peers))
 }
 
@@ -158,43 +170,24 @@ func TestEntityDevice_IsValid(t *testing.T) {
 	testDevice, err := generateTestDevice()
 	require.NoError(t, err)
 
-	require.Error(t, testDevice.IsValid(), "device: endpoint should not be empty")
+	testDevice.Address = "invalid_address"
 
-	testDevice.Endpoint = "192.0.2"
-	require.Error(t, testDevice.IsValid(), "device: endpoint is not a valid IPv4 or IPv6")
+	errors := testDevice.IsValid()
+	require.Equal(t, 4, len(errors))
 
-	testDevice.Endpoint = "192.0.2.1"
-	require.Error(t, testDevice.IsValid(), "device: address should not be empty")
+	testDevice.Endpoint = "192.0.2.1:51820"
+	errors = testDevice.IsValid()
+	require.Equal(t, 3, len(errors))
 
-	testDevice.Address = "10.0.0.1"
-	require.Error(t, testDevice.IsValid(), "device: address is not a valid CIDR IP address")
+	testDevice.Address = "10.6.0.1/24"
+	errors = testDevice.IsValid()
+	require.Equal(t, 2, len(errors))
 
-	testDevice.Address = "10.0.0.1/24"
-	require.NoError(t, testDevice.IsValid())
-}
+	testDevice.MTU = 1414
+	errors = testDevice.IsValid()
+	require.Equal(t, 1, len(errors))
 
-func TestEntityDevice_GetAvailableIP(t *testing.T) {
-	testDevice, err := generateTestDevice()
-	require.NoError(t, err)
-
-	testDevice.Endpoint = "192.0.2.1"
-	testDevice.Address = "10.0.0.1/24"
-
-	err = testDevice.ComputeMaxPeersCount()
-	require.NoError(t, err)
-
-	err = testDevice.ComputeInitialReservedIPs()
-	require.NoError(t, err)
-
-	testIP, err := testDevice.GetAvailableIP()
-	require.NoError(t, err)
-	require.Equal(t, testIP.String(), "10.0.0.0/32")
-
-	testIP, err = testDevice.GetAvailableIP()
-	require.NoError(t, err)
-	require.Equal(t, testIP.String(), "10.0.0.2/32")
-
-	testDevice.Address = "10.0.0.1/32"
-	_, err = testDevice.GetAvailableIP()
-	require.ErrorIs(t, err, entity.ErrRunOutOfAddresses)
+	testDevice.DNS = "1.1.1.1"
+	errors = testDevice.IsValid()
+	require.Equal(t, 0, len(errors))
 }

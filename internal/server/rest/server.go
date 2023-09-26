@@ -2,6 +2,7 @@ package restserver
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/fs"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	wgpb "github.com/AZhur771/wg-grpc-api/gen"
-	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"github.com/AZhur771/wg-grpc-api/internal/certs"
 	"github.com/AZhur771/wg-grpc-api/third_party"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -32,7 +32,7 @@ var (
 )
 
 type Server struct {
-	logger  app.Logger
+	logger  *zap.Logger
 	gateway *http.Server
 }
 
@@ -68,7 +68,10 @@ func serveSwagger(mux *http.ServeMux) error {
 	return nil
 }
 
-func New(ctx context.Context, logger app.Logger, addr, grpcAddr string, swagger bool, certPath, keyPath string) (*Server, error) {
+func New(ctx context.Context, logger *zap.Logger, swagger bool,
+	addr, grpcAddr, host, caCertPath, certPath, keyPath string,
+	certOpt tls.ClientAuthType,
+) (*Server, error) {
 	mux := http.NewServeMux()
 
 	gatewayOptions := []runtime.ServeMuxOption{
@@ -96,7 +99,7 @@ func New(ctx context.Context, logger app.Logger, addr, grpcAddr string, swagger 
 	opts := make([]grpc.DialOption, 0, 1)
 
 	if certPath != "" || keyPath != "" {
-		tlsCredentials, err := certs.LoadTLSCredentials(certPath, keyPath)
+		tlsCredentials, err := certs.LoadTLSCredentials(host, caCertPath, certPath, keyPath, certOpt)
 		if err != nil {
 			return nil, fmt.Errorf("rest gateway server: %w", err)
 		}

@@ -1,0 +1,33 @@
+FROM golang:1.18.8 as build
+
+ENV CODE_DIR /go/src/
+
+WORKDIR ${CODE_DIR}
+
+COPY go.mod .
+COPY go.sum .
+RUN CGO_ENABLED=0 go install -ldflags "-s -w -extldflags '-static'" github.com/go-delve/delve/cmd/dlv@latest
+RUN go mod download
+
+COPY . ${CODE_DIR}
+
+RUN CGO_ENABLED=0 go build \
+        -gcflags "all=-N -l" \
+        -o /opt/wg-grpc-api .
+
+
+FROM alpine:3.18.3
+
+RUN apk add -U --no-cache \
+  wireguard-tools \
+  dumb-init
+
+EXPOSE 51820/udp
+EXPOSE 51821/tcp
+EXPOSE 51822/tcp
+EXPOSE 4000
+
+COPY --from=build "/opt/wg-grpc-api" "/opt/wg-grpc-api"
+COPY --from=build "/go/bin/dlv" "/opt/dlv"
+
+CMD ["/usr/bin/dumb-init", "/opt/dlv", "--listen=:4000", "--headless=true", "--log=true", "--accept-multiclient", "--api-version=2", "exec", "/opt/wg-grpc-api" ]

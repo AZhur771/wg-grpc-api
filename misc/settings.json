@@ -2,5 +2,12 @@
     "go.alternateTools": {
         "dlv-dap": "${workspaceFolder}/misc/dlv.sh",
         "dlv": "${workspaceFolder}/misc/dlv.sh"
+    },
+    "protoc": {
+        "compile_on_save": false,
+        "options": [
+            "--proto_path=third_party",
+            "--proto_path=${workspaceRoot}/third_party"
+        ]
     }
 }

@@ -5,16 +5,72 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 
 import "google/api/annotations.proto";
 
+import "common_entities.proto";
+
 option go_package = "./;wgpb";
 
 service DeviceService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    description: "Service to configure wireguard device"
+    description: "Service to configure wireguard devices"
   };
 
-  rpc GetDevice(google.protobuf.Empty) returns (Device) {
+  rpc AddDevice(AddDeviceRequest) returns (EntityIdRequest) {
     option (google.api.http) = {
-      get: "/api/device"
+      post: "/api/devices"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Add device"
+      description: "Add device to the server."
+      tags: "DeviceService"
+      security: {
+        security_requirement: {
+          key: "ApiKeyAuth";
+          value: {}
+        }
+      }
+    };
+  };
+
+  rpc RemoveDevice(EntityIdRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/device/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Remove device by id"
+      description: "Remove device by id from the server."
+      tags: "DeviceService"
+      security: {
+        security_requirement: {
+          key: "ApiKeyAuth";
+          value: {}
+        }
+      }
+    };
+  };
+
+  rpc UpdateDevice(UpdateDeviceRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/api/device/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update device by id"
+      description: "Update device by id on the server."
+      tags: "DeviceService"
+      security: {
+        security_requirement: {
+          key: "ApiKeyAuth";
+          value: {}
+        }
+      }
+    };
+  };
+
+  rpc GetDevice(EntityIdRequest) returns (Device) {
+    option (google.api.http) = {
+      get: "/api/device/{id}"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get device"
@@ -28,16 +84,85 @@ service DeviceService {
       }
     };
   };
+
+  rpc GetDevices(GetDevicesRequest) returns (GetDevicesResponse) {
+    option (google.api.http) = {
+      get: "/api/devices"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get devices"
+      description: "Get devices from the server."
+      tags: "DeviceService"
+      security: {
+        security_requirement: {
+          key: "ApiKeyAuth";
+          value: {}
+        }
+      }
+    };
+  };
 }
 
 message Device {
-  string name = 1;   
-  string type = 2;
-  string public_key = 3;
-  int32 listen_port = 4;
-  int32 firewall_mark = 5;
-  int32 max_peers_count = 6;
-  int32 current_peers_count = 7;
-  string endpoint = 8;
-  string address = 9;
+  string id = 1;
+  string description = 2;
+  string name = 3;   
+  string type = 4;
+  string public_key = 5;
+  int32 firewall_mark = 6;
+  int32 max_peers_count = 7;
+  int32 current_peers_count = 8;
+  string endpoint = 9;
+  string address = 10;
+  int32 mtu = 11;
+  string dns = 12;
+  string table = 13;
+  int32 persistent_keep_alive = 14;
+  string pre_up = 15;
+  string pre_down = 16;
+  string post_up = 17;
+  string post_down = 18;
+}
+
+message AddDeviceRequest {
+  string description = 1;
+  int32 firewall_mark = 2;
+  string endpoint = 3;
+  string address = 4;
+  int32 mtu = 5;
+  string dns = 6;
+  string table = 7;
+  int32 persistent_keep_alive = 8;
+  string pre_up = 9;
+  string pre_down = 10;
+  string post_up = 11;
+  string post_down = 12;
+}
+
+message UpdateDeviceRequest {
+  string id = 1;
+  string description = 2;
+  int32 firewall_mark = 3;
+  string endpoint = 4;
+  string address = 5;
+  int32 mtu = 6;
+  string dns = 7;
+  string table = 8;
+  int32 persistent_keep_alive = 9;
+  string pre_up = 10;
+  string pre_down = 11;
+  string post_up = 12;
+  string post_down = 13;
+}
+
+message GetDevicesRequest {
+  int32 skip = 1;
+  int32 limit = 2;
+  string search = 3;
+}
+
+message GetDevicesResponse {
+  repeated Device devices = 1;
+  int32 total = 2;
+  bool has_next = 3;
 }

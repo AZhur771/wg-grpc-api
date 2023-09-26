@@ -2,25 +2,41 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "Debug go project",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceRoot}/cmd/wg-grpc-api",
+            "program": "${workspaceRoot}",
             "console": "integratedTerminal",
             "showLog": true,
             "debugAdapter": "dlv-dap",
             "env": {
-                "WG_GRPC_API_ADDRESS": "<WIREGUARD_ADDRESS>",
-                "WG_GRPC_API_ENDPOINT": "<WIREGUARD_ENDPOINT>",
-                "WG_GRPC_API_PEER_FOLDER": "<PATH_TO_PEERS_FOLDER>",
-                "WG_GRPC_API_SERVER_CERT": "<PATH_TO_SERVER_CERT>",
-                "WG_GRPC_API_SERVER_KEY": "<PATH_TO_SERVER_KEY>",
-                "WG_GRPC_API_GATEWAY": "true",
-                "WG_GRPC_API_SWAGGER": "true",
-                "WG_GRPC_API_TOKENS": "GKkju02qDnZlDCLssB3UZK=1eFSm?W1bJgmYsh/bCfYyRXYDm4p4ca5nRhCsuraUJw9uEm/bdatv3eWM9db?tMDZXu5ivhRmkBawxZn1A04veojqpIsDOgjGZHCF5PmlaWPF11YHvDWEhMJ8eklbl8QL8CG5HM=kMqU0C8L65Jbk1B/GRf/pFmEX6ialxPjuFiCnFJA0yOAGF6-mNVeqn9wKcqKYLD4zuSi0jA6xsSoS75ITVO?PSDkkS/xijpxm,7mWb9sLWhovwIj=Yed73qVxlYn9OLldQw?pTsCj9=cj87EF-ronC1X73bJPNIeJID0sh=ucsWyL!Pfmku/QINsdq=DhZth0/s?AJ4DQxhm4fdWPG3x6wv?lsNgJYMC=tLSJ6f9KgpymFPO4Ld6t65qebkGRh=rcJv68u5sqS5JEqCxM4N-eL?mM4GtMrGuh/AI-sg-AbKUXEg6UECfE6zO4YXUMXShtajRWjDeAsWe-AP8cW/gl=qr?y040yK2oH",
+                // "WG_GRPC_API_CACERT": "/test_certs/ca-certificate.cert",
+                // "WG_GRPC_API_CERT": "./test_certs/certificate.cert",
+                // "WG_GRPC_API_KEY": "./test_certs/private-key.key",
+                // "WG_GRPC_API_CERT_OPTS": "4",
+                "WG_GRPC_API_ADDRESS": "10.6.0.1/24",
+                "WG_GRPC_API_HOST": "127.0.0.1",
+                "WG_GRPC_API_PORT": "51821",
+                "WG_GRPC_API_GATEWAY_PORT": "51822",
+                "WG_GRPC_API_GATEWAY": "false",
+                "WG_GRPC_API_SWAGGER": "false",
+                "WG_GRPC_API_TOKENS": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTY4OTc4NTEwNSwiZXhwIjoxNjg5Nzg4NzA1fQ.lQWZuJVDmz1dUoYz8Y1PdKZxL4pJpIbHCf4Etfm4hx4",
+                "WG_GRPC_API_DB_HOST": "localhost",
+                "WG_GRPC_API_DB_PORT": "5432",
+                "WG_GRPC_API_DB_NAME": "wg",
+                "WG_GRPC_API_DB_USERNAME": "postgres",
+                "WG_GRPC_API_DB_PASSWORD": "postgres",
                 "DEBUG_AS_ROOT": "true"
             }
+        },
+        {
+            "name": "Debug go project in docker",
+            "type": "go",
+            "request": "attach",
+            "mode": "remote",
+            "port": 4000,
+            "host": "127.0.0.1"
         }
     ]
 }

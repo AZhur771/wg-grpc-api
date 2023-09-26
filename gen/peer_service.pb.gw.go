@@ -66,7 +66,7 @@ func local_request_PeerService_AddPeer_0(ctx context.Context, marshaler runtime.
 }
 
 func request_PeerService_RemovePeer_0(ctx context.Context, marshaler runtime.Marshaler, client PeerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -100,7 +100,7 @@ func request_PeerService_RemovePeer_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func local_request_PeerService_RemovePeer_0(ctx context.Context, marshaler runtime.Marshaler, server PeerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -202,7 +202,7 @@ func local_request_PeerService_UpdatePeer_0(ctx context.Context, marshaler runti
 }
 
 func request_PeerService_GetPeer_0(ctx context.Context, marshaler runtime.Marshaler, client PeerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -228,7 +228,7 @@ func request_PeerService_GetPeer_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func local_request_PeerService_GetPeer_0(ctx context.Context, marshaler runtime.Marshaler, server PeerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -290,7 +290,7 @@ func local_request_PeerService_GetPeers_0(ctx context.Context, marshaler runtime
 }
 
 func request_PeerService_EnablePeer_0(ctx context.Context, marshaler runtime.Marshaler, client PeerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -324,7 +324,7 @@ func request_PeerService_EnablePeer_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func local_request_PeerService_EnablePeer_0(ctx context.Context, marshaler runtime.Marshaler, server PeerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -358,7 +358,7 @@ func local_request_PeerService_EnablePeer_0(ctx context.Context, marshaler runti
 }
 
 func request_PeerService_DisablePeer_0(ctx context.Context, marshaler runtime.Marshaler, client PeerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -392,7 +392,7 @@ func request_PeerService_DisablePeer_0(ctx context.Context, marshaler runtime.Ma
 }
 
 func local_request_PeerService_DisablePeer_0(ctx context.Context, marshaler runtime.Marshaler, server PeerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -426,7 +426,7 @@ func local_request_PeerService_DisablePeer_0(ctx context.Context, marshaler runt
 }
 
 func request_PeerService_DownloadPeerConfig_0(ctx context.Context, marshaler runtime.Marshaler, client PeerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -452,7 +452,7 @@ func request_PeerService_DownloadPeerConfig_0(ctx context.Context, marshaler run
 }
 
 func local_request_PeerService_DownloadPeerConfig_0(ctx context.Context, marshaler runtime.Marshaler, server PeerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -478,7 +478,7 @@ func local_request_PeerService_DownloadPeerConfig_0(ctx context.Context, marshal
 }
 
 func request_PeerService_DownloadPeerQRCode_0(ctx context.Context, marshaler runtime.Marshaler, client PeerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -504,7 +504,7 @@ func request_PeerService_DownloadPeerQRCode_0(ctx context.Context, marshaler run
 }
 
 func local_request_PeerService_DownloadPeerQRCode_0(ctx context.Context, marshaler runtime.Marshaler, server PeerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PeerIdRequest
+	var protoReq EntityIdRequest
 	var metadata runtime.ServerMetadata
 
 	var (

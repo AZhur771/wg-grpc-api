@@ -15,9 +15,13 @@ RUN CGO_ENABLED=0 go build \
         -ldflags "$LDFLAGS" \
         -o /opt/wg-grpc-api .
 
-FROM alpine:3.9
 
-ENV BIN_FILE "/opt/wg-grpc-api"
-COPY --from=build ${BIN_FILE} ${BIN_FILE}
+FROM alpine:3.18.3
 
-CMD ${BIN_FILE}
+RUN apk add -U --no-cache \
+  wireguard-tools \
+  dumb-init
+
+COPY --from=build "/opt/wg-grpc-api" "/opt/wg-grpc-api"
+
+CMD ["/usr/bin/dumb-init", "/opt/wg-grpc-api"]

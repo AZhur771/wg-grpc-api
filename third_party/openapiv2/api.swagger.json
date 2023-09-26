@@ -7,7 +7,7 @@
   "tags": [
     {
       "name": "DeviceService",
-      "description": "Service to configure wireguard device"
+      "description": "Service to configure wireguard devices"
     },
     {
       "name": "PeerService",
@@ -25,7 +25,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/device": {
+    "/api/device/{id}": {
       "get": {
         "summary": "Get device",
         "description": "Get device from the server.",
@@ -44,6 +44,231 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DeviceService"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Remove device by id",
+        "description": "Remove device by id from the server.",
+        "operationId": "DeviceService_RemoveDevice",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "tags": [
+          "DeviceService"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "Update device by id",
+        "description": "Update device by id on the server.",
+        "operationId": "DeviceService_UpdateDevice",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "firewallMark": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "endpoint": {
+                  "type": "string"
+                },
+                "address": {
+                  "type": "string"
+                },
+                "mtu": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "dns": {
+                  "type": "string"
+                },
+                "table": {
+                  "type": "string"
+                },
+                "persistentKeepAlive": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "preUp": {
+                  "type": "string"
+                },
+                "preDown": {
+                  "type": "string"
+                },
+                "postUp": {
+                  "type": "string"
+                },
+                "postDown": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "DeviceService"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/devices": {
+      "get": {
+        "summary": "Get devices",
+        "description": "Get devices from the server.",
+        "operationId": "DeviceService_GetDevices",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/GetDevicesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DeviceService"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Add device",
+        "description": "Add device to the server.",
+        "operationId": "DeviceService_AddDevice",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/EntityIdRequest"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddDeviceRequest"
+            }
+          }
+        ],
         "tags": [
           "DeviceService"
         ],
@@ -87,6 +312,18 @@
             "required": false,
             "type": "integer",
             "format": "int32"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -106,7 +343,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/PeerIdRequest"
+              "$ref": "#/definitions/EntityIdRequest"
             }
           },
           "default": {
@@ -262,17 +499,18 @@
                 "description": {
                   "type": "string"
                 },
-                "tags": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
                 "name": {
                   "type": "string"
                 },
                 "email": {
                   "type": "string"
+                },
+                "dns": {
+                  "type": "string"
+                },
+                "mtu": {
+                  "type": "integer",
+                  "format": "int32"
                 }
               }
             }
@@ -456,9 +694,56 @@
     }
   },
   "definitions": {
+    "AddDeviceRequest": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "firewallMark": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "mtu": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "dns": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        },
+        "persistentKeepAlive": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "preUp": {
+          "type": "string"
+        },
+        "preDown": {
+          "type": "string"
+        },
+        "postUp": {
+          "type": "string"
+        },
+        "postDown": {
+          "type": "string"
+        }
+      }
+    },
     "AddPeerRequest": {
       "type": "object",
       "properties": {
+        "deviceId": {
+          "type": "string"
+        },
         "addPresharedKey": {
           "type": "boolean"
         },
@@ -469,23 +754,30 @@
         "description": {
           "type": "string"
         },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "name": {
           "type": "string"
         },
         "email": {
           "type": "string"
+        },
+        "dns": {
+          "type": "string"
+        },
+        "mtu": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
     "Device": {
       "type": "object",
       "properties": {
+        "id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
         "name": {
           "type": "string"
         },
@@ -494,10 +786,6 @@
         },
         "publicKey": {
           "type": "string"
-        },
-        "listenPort": {
-          "type": "integer",
-          "format": "int32"
         },
         "firewallMark": {
           "type": "integer",
@@ -515,6 +803,32 @@
           "type": "string"
         },
         "address": {
+          "type": "string"
+        },
+        "mtu": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "dns": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        },
+        "persistentKeepAlive": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "preUp": {
+          "type": "string"
+        },
+        "preDown": {
+          "type": "string"
+        },
+        "postUp": {
+          "type": "string"
+        },
+        "postDown": {
           "type": "string"
         }
       }
@@ -535,13 +849,39 @@
         }
       }
     },
+    "EntityIdRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "GetDevicesResponse": {
+      "type": "object",
+      "properties": {
+        "devices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Device"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "hasNext": {
+          "type": "boolean"
+        }
+      }
+    },
     "GetPeersResponse": {
       "type": "object",
       "properties": {
         "peers": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Peer"
+            "$ref": "#/definitions/PeerAbridged"
           }
         },
         "total": {
@@ -557,6 +897,9 @@
       "type": "object",
       "properties": {
         "id": {
+          "type": "string"
+        },
+        "deviceId": {
           "type": "string"
         },
         "name": {
@@ -606,22 +949,61 @@
         "isActive": {
           "type": "boolean"
         },
-        "tags": {
+        "description": {
+          "type": "string"
+        },
+        "dns": {
+          "type": "string"
+        },
+        "mtu": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "PeerAbridged": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "publicKey": {
+          "type": "string"
+        },
+        "persistentKeepAlive": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "allowedIps": {
           "type": "array",
           "items": {
             "type": "string"
           }
         },
+        "hasPresharedKey": {
+          "type": "boolean"
+        },
+        "isEnabled": {
+          "type": "boolean"
+        },
         "description": {
           "type": "string"
-        }
-      }
-    },
-    "PeerIdRequest": {
-      "type": "object",
-      "properties": {
-        "id": {
+        },
+        "dns": {
           "type": "string"
+        },
+        "mtu": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },

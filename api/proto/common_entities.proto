@@ -1,0 +1,9 @@
+
+syntax = "proto3";
+
+option go_package = "./;wgpb";
+
+message EntityIdRequest {
+  string id = 1;
+}
+  
