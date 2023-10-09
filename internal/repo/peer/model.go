@@ -36,7 +36,7 @@ func (p *PeerModel) FromEntity(peer *entity.Peer) *PeerModel {
 	p.Email = peer.Email
 	p.DNS = peer.DNS
 	p.Mtu = peer.MTU
-	p.PersistentKeepAlive = int(peer.PersistentKeepaliveInterval)
+	p.PersistentKeepAlive = int(peer.PersistentKeepaliveInterval) / (1000 * 1000)
 	p.IsEnabled = peer.IsEnabled
 
 	if peer.HasPresharedKey {
@@ -72,8 +72,9 @@ func (p *PeerModel) ToEntity() (*entity.Peer, error) {
 	peer.Email = p.Email
 	peer.MTU = p.Mtu
 	peer.DNS = p.DNS
-	peer.PersistentKeepaliveInterval = time.Duration(p.PersistentKeepAlive)
+	peer.PersistentKeepaliveInterval = time.Duration(p.PersistentKeepAlive * 1000 * 1000)
 	peer.IsEnabled = p.IsEnabled
+	peer.AllowedIPs = p.AllowedIPs
 
 	return peer, nil
 }

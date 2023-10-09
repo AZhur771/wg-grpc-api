@@ -9,15 +9,13 @@ import (
 	wgpb "github.com/AZhur771/wg-grpc-api/gen"
 	"github.com/AZhur771/wg-grpc-api/internal/app"
 	"github.com/AZhur771/wg-grpc-api/internal/dto"
-	"github.com/AZhur771/wg-grpc-api/internal/entity"
-	deviceservice "github.com/AZhur771/wg-grpc-api/internal/service/device"
-	peerservice "github.com/AZhur771/wg-grpc-api/internal/service/peer"
+	"github.com/AZhur771/wg-grpc-api/internal/service/common"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
+	fieldmask_utils "github.com/mennanov/fieldmask-utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type PeersImpl struct {
@@ -36,7 +34,7 @@ func NewPeersImpl(ctx context.Context, logger *zap.Logger, service app.PeerServi
 	}
 }
 
-func (p *PeersImpl) AddPeer(ctx context.Context, req *wgpb.AddPeerRequest) (*wgpb.EntityIdRequest, error) {
+func (p *PeersImpl) Add(ctx context.Context, req *wgpb.AddPeerRequest) (*wgpb.EntityIdRequest, error) {
 	deviceID, err := uuid.Parse(req.GetDeviceId())
 	if err != nil {
 		return nil, err
@@ -55,11 +53,14 @@ func (p *PeersImpl) AddPeer(ctx context.Context, req *wgpb.AddPeerRequest) (*wgp
 		},
 	)
 
-	errInvalidDevice := deviceservice.ErrInvalidDevice{}
+	errInvalidData := &common.ErrInvalidData{}
 
-	if errors.As(err, &errInvalidDevice) {
+	if errors.As(err, errInvalidData) {
 		st := status.New(codes.InvalidArgument, err.Error())
-		st.WithDetails(errInvalidDevice.Details())
+		st, err = st.WithDetails(errInvalidData.Details())
+		if err != nil {
+			return nil, err
+		}
 		return nil, st.Err()
 	}
 
@@ -76,29 +77,41 @@ func (p *PeersImpl) AddPeer(ctx context.Context, req *wgpb.AddPeerRequest) (*wgp
 	}, nil
 }
 
-func (p *PeersImpl) UpdatePeer(ctx context.Context, req *wgpb.UpdatePeerRequest) (*empty.Empty, error) {
-	id, err := uuid.Parse(req.GetId())
+func (p *PeersImpl) Update(ctx context.Context, req *wgpb.UpdatePeerRequest) (*empty.Empty, error) {
+	peer := req.GetPeer()
+	fmask, err := fieldmask_utils.MaskFromPaths(req.FieldMask.Paths, mapNames)
+	if err != nil {
+		return nil, err
+	}
+
+	ID, err := uuid.Parse(peer.GetId())
 	if err != nil {
 		return nil, err
 	}
 
 	_, err = p.Service.Update(ctx,
 		dto.UpdatePeerDTO{
-			ID:                  id,
-			Name:                req.GetName(),
-			Email:               req.GetEmail(),
-			Description:         req.GetDescription(),
-			AddPresharedKey:     req.GetAddPresharedKey(),
-			RemovePresharedKey:  req.GetRemovePresharedKey(),
-			PersistentKeepAlive: time.Duration(req.GetPersistentKeepAlive()) * time.Second,
+			ID:                  ID,
+			Name:                peer.GetName(),
+			Email:               peer.GetEmail(),
+			Description:         peer.GetDescription(),
+			AddPresharedKey:     peer.GetAddPresharedKey(),
+			RemovePresharedKey:  peer.GetRemovePresharedKey(),
+			DNS:                 peer.GetDns(),
+			MTU:                 int(peer.GetMtu()),
+			PersistentKeepAlive: time.Duration(peer.GetPersistentKeepAlive()) * time.Second,
 		},
+		fmask,
 	)
 
-	errInvalidDevice := deviceservice.ErrInvalidDevice{}
+	errInvalidData := &common.ErrInvalidData{}
 
-	if errors.As(err, &errInvalidDevice) {
+	if errors.As(err, errInvalidData) {
 		st := status.New(codes.InvalidArgument, err.Error())
-		st.WithDetails(errInvalidDevice.Details())
+		st, err = st.WithDetails(errInvalidData.Details())
+		if err != nil {
+			return nil, err
+		}
 		return nil, st.Err()
 	}
 
@@ -113,22 +126,25 @@ func (p *PeersImpl) UpdatePeer(ctx context.Context, req *wgpb.UpdatePeerRequest)
 	return &empty.Empty{}, nil
 }
 
-func (p *PeersImpl) RemovePeer(ctx context.Context, req *wgpb.EntityIdRequest) (*empty.Empty, error) {
+func (p *PeersImpl) Remove(ctx context.Context, req *wgpb.EntityIdRequest) (*empty.Empty, error) {
 	id, err := uuid.Parse(req.GetId())
 	if err != nil {
 		return nil, err
 	}
 
-	if err := p.Service.Remove(ctx, id); errors.Is(err, sql.ErrNoRows) {
+	err = p.Service.Remove(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, err.Error())
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
 	return &empty.Empty{}, nil
 }
 
-func (p *PeersImpl) GetPeer(ctx context.Context, req *wgpb.EntityIdRequest) (*wgpb.Peer, error) {
+func (p *PeersImpl) Get(ctx context.Context, req *wgpb.EntityIdRequest) (*wgpb.Peer, error) {
 	id, err := uuid.Parse(req.GetId())
 	if err != nil {
 		return nil, err
@@ -137,14 +153,16 @@ func (p *PeersImpl) GetPeer(ctx context.Context, req *wgpb.EntityIdRequest) (*wg
 	peer, err := p.Service.Get(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, err.Error())
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
 	return mapEntityPeerToPbPeer(peer), nil
 }
 
-func (p *PeersImpl) GetPeers(ctx context.Context, req *wgpb.GetPeersRequest) (*wgpb.GetPeersResponse, error) {
+func (p *PeersImpl) GetAll(ctx context.Context, req *wgpb.GetPeersRequest) (*wgpb.GetPeersResponse, error) {
 	deviceIDStr := req.GetDeviceId()
 
 	var deviceID uuid.UUID
@@ -166,9 +184,19 @@ func (p *PeersImpl) GetPeers(ctx context.Context, req *wgpb.GetPeersRequest) (*w
 		Search:   req.GetSearch(),
 		DeviceID: deviceID,
 	})
-	if errors.Is(err, peerservice.ErrInvalidPaginationParams) {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	} else if err != nil {
+
+	errInvalidData := &common.ErrInvalidData{}
+
+	if errors.As(err, errInvalidData) {
+		st := status.New(codes.InvalidArgument, err.Error())
+		st, err = st.WithDetails(errInvalidData.Details())
+		if err != nil {
+			return nil, err
+		}
+		return nil, st.Err()
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -184,7 +212,7 @@ func (p *PeersImpl) GetPeers(ctx context.Context, req *wgpb.GetPeersRequest) (*w
 	}, nil
 }
 
-func (p *PeersImpl) EnablePeer(ctx context.Context, req *wgpb.EntityIdRequest) (*empty.Empty, error) {
+func (p *PeersImpl) Enable(ctx context.Context, req *wgpb.EntityIdRequest) (*empty.Empty, error) {
 	id, err := uuid.Parse(req.GetId())
 	if err != nil {
 		return nil, err
@@ -192,14 +220,16 @@ func (p *PeersImpl) EnablePeer(ctx context.Context, req *wgpb.EntityIdRequest) (
 
 	if err := p.Service.Enable(ctx, id); errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, err.Error())
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
 	return &empty.Empty{}, nil
 }
 
-func (p *PeersImpl) DisablePeer(ctx context.Context, req *wgpb.EntityIdRequest) (*empty.Empty, error) {
+func (p *PeersImpl) Disable(ctx context.Context, req *wgpb.EntityIdRequest) (*empty.Empty, error) {
 	id, err := uuid.Parse(req.GetId())
 	if err != nil {
 		return nil, err
@@ -207,14 +237,16 @@ func (p *PeersImpl) DisablePeer(ctx context.Context, req *wgpb.EntityIdRequest) 
 
 	if err := p.Service.Disable(ctx, id); errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, err.Error())
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
 	return &empty.Empty{}, nil
 }
 
-func (p *PeersImpl) DownloadPeerConfig(ctx context.Context, req *wgpb.EntityIdRequest) (*wgpb.DownloadFileResponse, error) {
+func (p *PeersImpl) DownloadConfig(ctx context.Context, req *wgpb.EntityIdRequest) (*wgpb.DownloadFileResponse, error) {
 	ID, err := uuid.Parse(req.GetId())
 	if err != nil {
 		return nil, err
@@ -223,7 +255,9 @@ func (p *PeersImpl) DownloadPeerConfig(ctx context.Context, req *wgpb.EntityIdRe
 	file, err := p.Service.DownloadConfig(ctx, ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, err.Error())
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -234,7 +268,7 @@ func (p *PeersImpl) DownloadPeerConfig(ctx context.Context, req *wgpb.EntityIdRe
 	}, nil
 }
 
-func (p *PeersImpl) DownloadPeerQRCode(ctx context.Context, req *wgpb.EntityIdRequest) (*wgpb.DownloadFileResponse, error) {
+func (p *PeersImpl) DownloadQRCode(ctx context.Context, req *wgpb.EntityIdRequest) (*wgpb.DownloadFileResponse, error) {
 	ID, err := uuid.Parse(req.GetId())
 	if err != nil {
 		return nil, err
@@ -243,7 +277,9 @@ func (p *PeersImpl) DownloadPeerQRCode(ctx context.Context, req *wgpb.EntityIdRe
 	qr, err := p.Service.DownloadQRCode(ctx, ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, err.Error())
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -252,44 +288,4 @@ func (p *PeersImpl) DownloadPeerQRCode(ctx context.Context, req *wgpb.EntityIdRe
 		Size: qr.Size,
 		Data: qr.Data,
 	}, nil
-}
-
-func mapEntityPeerToPbPeer(peer *entity.Peer) *wgpb.Peer {
-	return &wgpb.Peer{
-		Id:                  peer.ID.String(),
-		DeviceId:            peer.DeviceID.String(),
-		Name:                peer.Name,
-		Email:               peer.Email,
-		PublicKey:           peer.PublicKey.String(),
-		Endpoint:            peer.Endpoint.String(),
-		PersistentKeepAlive: int32(peer.PersistentKeepaliveInterval.Seconds()),
-		AllowedIps:          peer.AllowedIPs,
-		ProtocolVersion:     uint32(peer.ProtocolVersion),
-		ReceiveBytes:        peer.ReceiveBytes,
-		TransmitBytes:       peer.TransmitBytes,
-		LastHandshake:       timestamppb.New(peer.LastHandshakeTime),
-		HasPresharedKey:     peer.HasPresharedKey,
-		IsEnabled:           peer.IsEnabled,
-		IsActive:            peer.IsActive,
-		Description:         peer.Description,
-		Dns:                 peer.DNS,
-		Mtu:                 int32(peer.MTU),
-	}
-}
-
-func mapEntityPeerToPbPeerAbridged(peer *entity.Peer) *wgpb.PeerAbridged {
-	return &wgpb.PeerAbridged{
-		Id:                  peer.ID.String(),
-		DeviceId:            peer.DeviceID.String(),
-		Name:                peer.Name,
-		Email:               peer.Email,
-		PublicKey:           peer.PublicKey.String(),
-		PersistentKeepAlive: int32(peer.PersistentKeepaliveInterval.Seconds()),
-		AllowedIps:          peer.AllowedIPs,
-		HasPresharedKey:     peer.HasPresharedKey,
-		IsEnabled:           peer.IsEnabled,
-		Description:         peer.Description,
-		Dns:                 peer.DNS,
-		Mtu:                 int32(peer.MTU),
-	}
 }

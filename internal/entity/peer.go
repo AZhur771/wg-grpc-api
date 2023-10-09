@@ -55,13 +55,6 @@ func (p *Peer) IsValid() []*errdetails.BadRequest_FieldViolation {
 		}
 	}
 
-	if p.MTU == 0 {
-		errors = append(errors, &errdetails.BadRequest_FieldViolation{
-			Field:       "mtu",
-			Description: "mtu should not be empty",
-		})
-	}
-
 	if p.DNS != "" {
 		for _, addr := range strings.Split(p.DNS, ",") {
 			ip := net.ParseIP(addr)
@@ -72,11 +65,6 @@ func (p *Peer) IsValid() []*errdetails.BadRequest_FieldViolation {
 				})
 			}
 		}
-	} else {
-		errors = append(errors, &errdetails.BadRequest_FieldViolation{
-			Field:       "dns",
-			Description: "dns should not be empty",
-		})
 	}
 
 	if len(p.Description) > 40 {

@@ -25,46 +25,11 @@
     "application/json"
   ],
   "paths": {
-    "/api/device/{id}": {
-      "get": {
-        "summary": "Get device",
-        "description": "Get device from the server.",
-        "operationId": "DeviceService_GetDevice",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/Device"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "DeviceService"
-        ],
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
-      },
-      "delete": {
-        "summary": "Remove device by id",
-        "description": "Remove device by id from the server.",
-        "operationId": "DeviceService_RemoveDevice",
+    "/api/device/{device.id}": {
+      "put": {
+        "summary": "Update device by id",
+        "description": "Update device by id on the server.",
+        "operationId": "DeviceService_Update",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -82,7 +47,7 @@
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "device.id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -92,7 +57,56 @@
             "in": "body",
             "required": true,
             "schema": {
-              "type": "object"
+              "type": "object",
+              "properties": {
+                "device": {
+                  "type": "object",
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "firewallMark": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "endpoint": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "mtu": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "dns": {
+                      "type": "string"
+                    },
+                    "table": {
+                      "type": "string"
+                    },
+                    "persistentKeepAlive": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "preUp": {
+                      "type": "string"
+                    },
+                    "preDown": {
+                      "type": "string"
+                    },
+                    "postUp": {
+                      "type": "string"
+                    },
+                    "postDown": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "fieldMask": {
+                  "type": "string"
+                }
+              }
             }
           }
         ],
@@ -105,10 +119,10 @@
           }
         ]
       },
-      "put": {
+      "patch": {
         "summary": "Update device by id",
         "description": "Update device by id on the server.",
-        "operationId": "DeviceService_UpdateDevice",
+        "operationId": "DeviceService_Update2",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -126,13 +140,13 @@
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "device.id",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "body",
+            "name": "device",
             "in": "body",
             "required": true,
             "schema": {
@@ -179,6 +193,93 @@
                 }
               }
             }
+          },
+          {
+            "name": "fieldMask",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DeviceService"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/device/{id}": {
+      "get": {
+        "summary": "Get device",
+        "description": "Get device from the server.",
+        "operationId": "DeviceService_Get",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Device"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DeviceService"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Remove device by id",
+        "description": "Remove device by id from the server.",
+        "operationId": "DeviceService_Remove",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
           }
         ],
         "tags": [
@@ -195,7 +296,7 @@
       "get": {
         "summary": "Get devices",
         "description": "Get devices from the server.",
-        "operationId": "DeviceService_GetDevices",
+        "operationId": "DeviceService_GetAll",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -244,7 +345,7 @@
       "post": {
         "summary": "Add device",
         "description": "Add device to the server.",
-        "operationId": "DeviceService_AddDevice",
+        "operationId": "DeviceService_Add",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -283,7 +384,7 @@
       "get": {
         "summary": "Get peers",
         "description": "Get peers from the server.",
-        "operationId": "PeerService_GetPeers",
+        "operationId": "PeerService_GetAll",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -338,7 +439,7 @@
       "post": {
         "summary": "Add peer",
         "description": "Add peer to the server.",
-        "operationId": "PeerService_AddPeer",
+        "operationId": "PeerService_Add",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -377,7 +478,7 @@
       "get": {
         "summary": "Get peer by id",
         "description": "Get peer by id from the server.",
-        "operationId": "PeerService_GetPeer",
+        "operationId": "PeerService_Get",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -412,7 +513,7 @@
       "delete": {
         "summary": "Remove peer by id",
         "description": "Remove peer by id from the server.",
-        "operationId": "PeerService_RemovePeer",
+        "operationId": "PeerService_Remove",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -452,85 +553,13 @@
             "ApiKeyAuth": []
           }
         ]
-      },
-      "put": {
-        "summary": "Update peer by id",
-        "description": "Update peer by id on the server.",
-        "operationId": "PeerService_UpdatePeer",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "type": "object",
-              "properties": {}
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "addPresharedKey": {
-                  "type": "boolean"
-                },
-                "removePresharedKey": {
-                  "type": "boolean"
-                },
-                "persistentKeepAlive": {
-                  "type": "integer",
-                  "format": "int32"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "email": {
-                  "type": "string"
-                },
-                "dns": {
-                  "type": "string"
-                },
-                "mtu": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
-          }
-        ],
-        "tags": [
-          "PeerService"
-        ],
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ]
       }
     },
     "/api/peers/{id}/config": {
       "get": {
         "summary": "Download peer config by id",
         "description": "Download peer config by id from the server.",
-        "operationId": "PeerService_DownloadPeerConfig",
+        "operationId": "PeerService_DownloadConfig",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -567,7 +596,7 @@
       "post": {
         "summary": "Disable peer by id",
         "description": "Disable peer by id from the server.",
-        "operationId": "PeerService_DisablePeer",
+        "operationId": "PeerService_Disable",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -613,7 +642,7 @@
       "post": {
         "summary": "Enable peer by id",
         "description": "Enable peer by id from the server.",
-        "operationId": "PeerService_EnablePeer",
+        "operationId": "PeerService_Enable",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -659,7 +688,7 @@
       "get": {
         "summary": "Download peer qr-code by id",
         "description": "Download peer qr-code by id from the server.",
-        "operationId": "PeerService_DownloadPeerQRCode",
+        "operationId": "PeerService_DownloadQRCode",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -679,6 +708,166 @@
             "name": "id",
             "in": "path",
             "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "PeerService"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/peers/{peer.id}": {
+      "put": {
+        "summary": "Update peer by id",
+        "description": "Update peer by id on the server.",
+        "operationId": "PeerService_Update",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "peer.id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "peer": {
+                  "type": "object",
+                  "properties": {
+                    "addPresharedKey": {
+                      "type": "boolean"
+                    },
+                    "removePresharedKey": {
+                      "type": "boolean"
+                    },
+                    "persistentKeepAlive": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "dns": {
+                      "type": "string"
+                    },
+                    "mtu": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                },
+                "fieldMask": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "PeerService"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Update peer by id",
+        "description": "Update peer by id on the server.",
+        "operationId": "PeerService_Update2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "peer.id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "peer",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "addPresharedKey": {
+                  "type": "boolean"
+                },
+                "removePresharedKey": {
+                  "type": "boolean"
+                },
+                "persistentKeepAlive": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "dns": {
+                  "type": "string"
+                },
+                "mtu": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          {
+            "name": "fieldMask",
+            "in": "query",
+            "required": false,
             "type": "string"
           }
         ],
@@ -996,6 +1185,87 @@
           "type": "boolean"
         },
         "description": {
+          "type": "string"
+        },
+        "dns": {
+          "type": "string"
+        },
+        "mtu": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "UpdateDeviceData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "firewallMark": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "mtu": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "dns": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        },
+        "persistentKeepAlive": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "preUp": {
+          "type": "string"
+        },
+        "preDown": {
+          "type": "string"
+        },
+        "postUp": {
+          "type": "string"
+        },
+        "postDown": {
+          "type": "string"
+        }
+      }
+    },
+    "UpdatePeerData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "addPresharedKey": {
+          "type": "boolean"
+        },
+        "removePresharedKey": {
+          "type": "boolean"
+        },
+        "persistentKeepAlive": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
           "type": "string"
         },
         "dns": {

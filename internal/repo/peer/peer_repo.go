@@ -26,7 +26,8 @@ func (p *PeerRepo) Add(ctx context.Context, tx *sqlx.Tx, peer *entity.Peer) (*en
 
 	queryPeer := `
 		INSERT INTO peer (
-				device_id private_key,
+				device_id,
+				private_key,
 				preshared_key,
 				"name",
 				description,
@@ -37,7 +38,8 @@ func (p *PeerRepo) Add(ctx context.Context, tx *sqlx.Tx, peer *entity.Peer) (*en
 				is_enabled
 			)
 		VALUES (
-				:device_id :private_key,
+				:device_id,
+				:private_key,
 				:preshared_key,
 				:name,
 				:description,
@@ -70,28 +72,26 @@ func (p *PeerRepo) Add(ctx context.Context, tx *sqlx.Tx, peer *entity.Peer) (*en
 		}
 	}
 
-	allowedIPs := make([]struct {
-		peerID   string
-		deviceID string
-		addr     string
-	}, len(peer.AllowedIPs))
-
-	for i, allowedIP := range peer.AllowedIPs {
-		allowedIPs[i] = struct {
-			peerID   string
-			deviceID string
-			addr     string
-		}{
-			peerID:   model.ID.String(),
-			deviceID: model.DeviceID.String(),
-			addr:     allowedIP,
-		}
+	type allowedIP struct {
+		PeerID   string `db:"peer_id" sql:",type:uuid"`
+		DeviceID string `db:"device_id" sql:",type:uuid"`
+		Addr     string `sql:",type:inet"`
 	}
 
 	queryAddr := `
-		INSERT INTO peer (peer_id, device_id, address)
-		VALUES (:peerID, :deviceID, :addr);
+		INSERT INTO peer_address (peer_id, device_id, address)
+		VALUES (:peer_id, :device_id, :addr);
 	`
+
+	allowedIPs := make([]allowedIP, 0, len(peer.AllowedIPs))
+
+	for _, addr := range peer.AllowedIPs {
+		allowedIPs = append(allowedIPs, allowedIP{
+			PeerID:   model.ID.String(),
+			DeviceID: model.DeviceID.String(),
+			Addr:     addr,
+		})
+	}
 
 	if tx == nil {
 		_, err = tx.NamedExecContext(ctx, queryAddr, allowedIPs)
@@ -110,14 +110,15 @@ func (p *PeerRepo) Update(ctx context.Context, tx *sqlx.Tx, peer *entity.Peer) (
 	model := p.toModel(peer)
 
 	query := `
-		UPDATE device
+		UPDATE peer
 		SET preshared_key = :preshared_key,
 			"name" = :name,
 			description = :description,
 			email = :email,
 			dns = :dns,
 			mtu = :mtu,
-			persistent_keep_alive = :persistent_keep_alive is_enabled = :is_enabled
+			persistent_keep_alive = :persistent_keep_alive,
+			is_enabled = :is_enabled
 		RETURNING *;
 	`
 
@@ -150,9 +151,9 @@ func (p *PeerRepo) Remove(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) error 
 	var err error
 
 	if tx == nil {
-		_, err = p.db.ExecContext(ctx, query, id)
+		_, err = p.db.ExecContext(ctx, query, id.String())
 	} else {
-		_, err = tx.Exec(query, id)
+		_, err = tx.Exec(query, id.String())
 	}
 
 	if err != nil {
@@ -166,22 +167,22 @@ func (p *PeerRepo) Get(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*entity.
 	model := NewModel()
 
 	rows, err := p.db.QueryxContext(ctx, `
-			SELECT id,
-					device_id,
-					private_key,
-					preshared_key,
-					"name",
-					description,
-					email,
-					persistent_keep_alive,
-					is_enabled,
-					mtu,
-					dns,
-					pa.address
-			FROM   peer p
+			SELECT p.id as id,
+					p.device_id as device_id,
+					p.private_key as private_key,
+					p.preshared_key as preshared_key,
+					p."name" as "name",
+					p.description as description,
+					p.email as email,
+					p.persistent_keep_alive as persistent_keep_alive,
+					p.is_enabled as is_enabled,
+					p.mtu as mtu,
+					p.dns as dns,
+					pa.address as address
+			FROM peer p
 				JOIN peer_address pa
 				ON   p.id = pa.peer_id
-			WHERE  id = $1;
+			WHERE p.id = $1;
 		`,
 		id,
 	)
@@ -217,42 +218,45 @@ func (p *PeerRepo) Get(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*entity.
 }
 
 func (p *PeerRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, search string, deviceID uuid.UUID) ([]*entity.Peer, error) {
-	mapper := make(map[uuid.UUID]*entity.Peer)
+	mapper := make(map[uuid.UUID]*PeerModel)
 
 	query := `
-		SELECT *
+		SELECT t.id as id,
+				t.device_id as device_id,
+				t.private_key as private_key,
+				t.preshared_key as preshared_key,
+				t."name" as "name",
+				t.description as description,
+				t.email as email,
+				t.persistent_keep_alive as persistent_keep_alive,
+				t.is_enabled as is_enabled,
+				t.mtu as mtu,
+				t.dns as dns,
+				pa.address as address
 		FROM (
-				SELECT id,
-					device_id,
-					private_key,
-					preshared_key,
-					"name",
-					description,
-					email,
-					persistent_keep_alive,
-					is_enabled,
-					mtu,
-					dns,
-					pa.address
-				FROM peer p
-					JOIN peer_address pa ON p.id = pa.peer_id
+				SELECT * FROM peer
 				WHERE true
 				###device_id###
 				###search###
+				OFFSET :skip LIMIT :limit
 			) t
+		JOIN peer_address pa
+		ON 	 t.id = pa.peer_id;
 	`
 
 	if deviceID != uuid.Nil {
 		query = strings.Replace(query, "###device_id###", "AND device_id := device_id", 1)
+	} else {
+		query = strings.Replace(query, "###device_id###", "", 1)
 	}
 
 	if search != "" {
 		query = strings.Replace(query,
 			"###search###",
 			"AND \"name\" ILIKE '%' || :search || '%' OR description ILIKE '%' || :search || '%'", 1)
+	} else {
+		query = strings.Replace(query, "###search###", "", 1)
 	}
-
-	query += "OFFSET :skip LIMIT :limit;"
 
 	var rows *sqlx.Rows
 	var err error
@@ -281,31 +285,45 @@ func (p *PeerRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, sea
 	defer rows.Close()
 
 	for rows.Next() {
-		var peer *entity.Peer
+		model := NewModel()
+
 		var allowedIP string
 
-		err := rows.Scan(&peer.ID, &peer.DeviceID, &peer.PrivateKey, &peer.PresharedKey, &peer.Name, &peer.Description,
-			&peer.Email, &peer.PersistentKeepaliveInterval, &peer.IsEnabled, &allowedIP)
-
-		p, ok := mapper[peer.ID]
-		if !ok {
-			peer.AllowedIPs = append(peer.AllowedIPs, allowedIP)
-			mapper[peer.ID] = peer
-		} else {
-			p.AllowedIPs = append(p.AllowedIPs, allowedIP)
-		}
-
-		if err != nil {
+		if err := rows.Scan(
+			&model.ID,
+			&model.DeviceID,
+			&model.PrivateKey,
+			&model.PresharedKey,
+			&model.Name,
+			&model.Description,
+			&model.Email,
+			&model.PersistentKeepAlive,
+			&model.IsEnabled,
+			&model.Mtu,
+			&model.DNS,
+			&allowedIP,
+		); err != nil {
 			return nil, fmt.Errorf("storage: %w", err)
 		}
 
-		peer.AllowedIPs = append(peer.AllowedIPs, allowedIP)
+		p, ok := mapper[model.ID]
+		if !ok {
+			model.AllowedIPs = append(model.AllowedIPs, allowedIP)
+			mapper[model.ID] = model
+		} else {
+			p.AllowedIPs = append(p.AllowedIPs, allowedIP)
+		}
 	}
 
 	peers := make([]*entity.Peer, 0, len(mapper))
 
-	for _, p := range mapper {
-		peers = append(peers, p)
+	for _, model := range mapper {
+		peer, err := model.ToEntity()
+		if err != nil {
+			return nil, fmt.Errorf("device repo: %w", err)
+		}
+
+		peers = append(peers, peer)
 	}
 
 	return peers, nil
@@ -315,7 +333,9 @@ func (p *PeerRepo) Count(ctx context.Context, tx *sqlx.Tx, deviceID uuid.UUID) (
 	query := "SELECT count(1) FROM peer ###device_id###;"
 
 	if deviceID != uuid.Nil {
-		query = strings.Replace(query, "###device_id###", "WHERE device_id := device_id", 1)
+		query = strings.Replace(query, "###device_id###", "WHERE device_id := :device_id", 1)
+	} else {
+		query = strings.Replace(query, "###device_id###", "", 1)
 	}
 
 	var count int

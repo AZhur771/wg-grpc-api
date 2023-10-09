@@ -23,15 +23,15 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PeerServiceClient interface {
-	AddPeer(ctx context.Context, in *AddPeerRequest, opts ...grpc.CallOption) (*EntityIdRequest, error)
-	RemovePeer(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error)
-	UpdatePeer(ctx context.Context, in *UpdatePeerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
-	GetPeer(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*Peer, error)
-	GetPeers(ctx context.Context, in *GetPeersRequest, opts ...grpc.CallOption) (*GetPeersResponse, error)
-	EnablePeer(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error)
-	DisablePeer(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error)
-	DownloadPeerConfig(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error)
-	DownloadPeerQRCode(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error)
+	Add(ctx context.Context, in *AddPeerRequest, opts ...grpc.CallOption) (*EntityIdRequest, error)
+	Remove(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	Update(ctx context.Context, in *UpdatePeerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	Get(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*Peer, error)
+	GetAll(ctx context.Context, in *GetPeersRequest, opts ...grpc.CallOption) (*GetPeersResponse, error)
+	Enable(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	Disable(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	DownloadConfig(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error)
+	DownloadQRCode(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error)
 }
 
 type peerServiceClient struct {
@@ -42,81 +42,81 @@ func NewPeerServiceClient(cc grpc.ClientConnInterface) PeerServiceClient {
 	return &peerServiceClient{cc}
 }
 
-func (c *peerServiceClient) AddPeer(ctx context.Context, in *AddPeerRequest, opts ...grpc.CallOption) (*EntityIdRequest, error) {
+func (c *peerServiceClient) Add(ctx context.Context, in *AddPeerRequest, opts ...grpc.CallOption) (*EntityIdRequest, error) {
 	out := new(EntityIdRequest)
-	err := c.cc.Invoke(ctx, "/PeerService/AddPeer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/Add", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *peerServiceClient) RemovePeer(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (c *peerServiceClient) Remove(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	out := new(empty.Empty)
-	err := c.cc.Invoke(ctx, "/PeerService/RemovePeer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/Remove", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *peerServiceClient) UpdatePeer(ctx context.Context, in *UpdatePeerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (c *peerServiceClient) Update(ctx context.Context, in *UpdatePeerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	out := new(empty.Empty)
-	err := c.cc.Invoke(ctx, "/PeerService/UpdatePeer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/Update", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *peerServiceClient) GetPeer(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*Peer, error) {
+func (c *peerServiceClient) Get(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*Peer, error) {
 	out := new(Peer)
-	err := c.cc.Invoke(ctx, "/PeerService/GetPeer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *peerServiceClient) GetPeers(ctx context.Context, in *GetPeersRequest, opts ...grpc.CallOption) (*GetPeersResponse, error) {
+func (c *peerServiceClient) GetAll(ctx context.Context, in *GetPeersRequest, opts ...grpc.CallOption) (*GetPeersResponse, error) {
 	out := new(GetPeersResponse)
-	err := c.cc.Invoke(ctx, "/PeerService/GetPeers", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/GetAll", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *peerServiceClient) EnablePeer(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (c *peerServiceClient) Enable(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	out := new(empty.Empty)
-	err := c.cc.Invoke(ctx, "/PeerService/EnablePeer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/Enable", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *peerServiceClient) DisablePeer(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (c *peerServiceClient) Disable(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	out := new(empty.Empty)
-	err := c.cc.Invoke(ctx, "/PeerService/DisablePeer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/Disable", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *peerServiceClient) DownloadPeerConfig(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error) {
+func (c *peerServiceClient) DownloadConfig(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error) {
 	out := new(DownloadFileResponse)
-	err := c.cc.Invoke(ctx, "/PeerService/DownloadPeerConfig", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/DownloadConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *peerServiceClient) DownloadPeerQRCode(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error) {
+func (c *peerServiceClient) DownloadQRCode(ctx context.Context, in *EntityIdRequest, opts ...grpc.CallOption) (*DownloadFileResponse, error) {
 	out := new(DownloadFileResponse)
-	err := c.cc.Invoke(ctx, "/PeerService/DownloadPeerQRCode", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/PeerService/DownloadQRCode", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,15 +127,15 @@ func (c *peerServiceClient) DownloadPeerQRCode(ctx context.Context, in *EntityId
 // All implementations must embed UnimplementedPeerServiceServer
 // for forward compatibility
 type PeerServiceServer interface {
-	AddPeer(context.Context, *AddPeerRequest) (*EntityIdRequest, error)
-	RemovePeer(context.Context, *EntityIdRequest) (*empty.Empty, error)
-	UpdatePeer(context.Context, *UpdatePeerRequest) (*empty.Empty, error)
-	GetPeer(context.Context, *EntityIdRequest) (*Peer, error)
-	GetPeers(context.Context, *GetPeersRequest) (*GetPeersResponse, error)
-	EnablePeer(context.Context, *EntityIdRequest) (*empty.Empty, error)
-	DisablePeer(context.Context, *EntityIdRequest) (*empty.Empty, error)
-	DownloadPeerConfig(context.Context, *EntityIdRequest) (*DownloadFileResponse, error)
-	DownloadPeerQRCode(context.Context, *EntityIdRequest) (*DownloadFileResponse, error)
+	Add(context.Context, *AddPeerRequest) (*EntityIdRequest, error)
+	Remove(context.Context, *EntityIdRequest) (*empty.Empty, error)
+	Update(context.Context, *UpdatePeerRequest) (*empty.Empty, error)
+	Get(context.Context, *EntityIdRequest) (*Peer, error)
+	GetAll(context.Context, *GetPeersRequest) (*GetPeersResponse, error)
+	Enable(context.Context, *EntityIdRequest) (*empty.Empty, error)
+	Disable(context.Context, *EntityIdRequest) (*empty.Empty, error)
+	DownloadConfig(context.Context, *EntityIdRequest) (*DownloadFileResponse, error)
+	DownloadQRCode(context.Context, *EntityIdRequest) (*DownloadFileResponse, error)
 	mustEmbedUnimplementedPeerServiceServer()
 }
 
@@ -143,32 +143,32 @@ type PeerServiceServer interface {
 type UnimplementedPeerServiceServer struct {
 }
 
-func (UnimplementedPeerServiceServer) AddPeer(context.Context, *AddPeerRequest) (*EntityIdRequest, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddPeer not implemented")
+func (UnimplementedPeerServiceServer) Add(context.Context, *AddPeerRequest) (*EntityIdRequest, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Add not implemented")
 }
-func (UnimplementedPeerServiceServer) RemovePeer(context.Context, *EntityIdRequest) (*empty.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemovePeer not implemented")
+func (UnimplementedPeerServiceServer) Remove(context.Context, *EntityIdRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Remove not implemented")
 }
-func (UnimplementedPeerServiceServer) UpdatePeer(context.Context, *UpdatePeerRequest) (*empty.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdatePeer not implemented")
+func (UnimplementedPeerServiceServer) Update(context.Context, *UpdatePeerRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
-func (UnimplementedPeerServiceServer) GetPeer(context.Context, *EntityIdRequest) (*Peer, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPeer not implemented")
+func (UnimplementedPeerServiceServer) Get(context.Context, *EntityIdRequest) (*Peer, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedPeerServiceServer) GetPeers(context.Context, *GetPeersRequest) (*GetPeersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPeers not implemented")
+func (UnimplementedPeerServiceServer) GetAll(context.Context, *GetPeersRequest) (*GetPeersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
 }
-func (UnimplementedPeerServiceServer) EnablePeer(context.Context, *EntityIdRequest) (*empty.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EnablePeer not implemented")
+func (UnimplementedPeerServiceServer) Enable(context.Context, *EntityIdRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Enable not implemented")
 }
-func (UnimplementedPeerServiceServer) DisablePeer(context.Context, *EntityIdRequest) (*empty.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DisablePeer not implemented")
+func (UnimplementedPeerServiceServer) Disable(context.Context, *EntityIdRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Disable not implemented")
 }
-func (UnimplementedPeerServiceServer) DownloadPeerConfig(context.Context, *EntityIdRequest) (*DownloadFileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DownloadPeerConfig not implemented")
+func (UnimplementedPeerServiceServer) DownloadConfig(context.Context, *EntityIdRequest) (*DownloadFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadConfig not implemented")
 }
-func (UnimplementedPeerServiceServer) DownloadPeerQRCode(context.Context, *EntityIdRequest) (*DownloadFileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DownloadPeerQRCode not implemented")
+func (UnimplementedPeerServiceServer) DownloadQRCode(context.Context, *EntityIdRequest) (*DownloadFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadQRCode not implemented")
 }
 func (UnimplementedPeerServiceServer) mustEmbedUnimplementedPeerServiceServer() {}
 
@@ -183,164 +183,164 @@ func RegisterPeerServiceServer(s grpc.ServiceRegistrar, srv PeerServiceServer) {
 	s.RegisterService(&PeerService_ServiceDesc, srv)
 }
 
-func _PeerService_AddPeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddPeerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).AddPeer(ctx, in)
+		return srv.(PeerServiceServer).Add(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/AddPeer",
+		FullMethod: "/PeerService/Add",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).AddPeer(ctx, req.(*AddPeerRequest))
+		return srv.(PeerServiceServer).Add(ctx, req.(*AddPeerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PeerService_RemovePeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_Remove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EntityIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).RemovePeer(ctx, in)
+		return srv.(PeerServiceServer).Remove(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/RemovePeer",
+		FullMethod: "/PeerService/Remove",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).RemovePeer(ctx, req.(*EntityIdRequest))
+		return srv.(PeerServiceServer).Remove(ctx, req.(*EntityIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PeerService_UpdatePeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdatePeerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).UpdatePeer(ctx, in)
+		return srv.(PeerServiceServer).Update(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/UpdatePeer",
+		FullMethod: "/PeerService/Update",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).UpdatePeer(ctx, req.(*UpdatePeerRequest))
+		return srv.(PeerServiceServer).Update(ctx, req.(*UpdatePeerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PeerService_GetPeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EntityIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).GetPeer(ctx, in)
+		return srv.(PeerServiceServer).Get(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/GetPeer",
+		FullMethod: "/PeerService/Get",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).GetPeer(ctx, req.(*EntityIdRequest))
+		return srv.(PeerServiceServer).Get(ctx, req.(*EntityIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PeerService_GetPeers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPeersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).GetPeers(ctx, in)
+		return srv.(PeerServiceServer).GetAll(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/GetPeers",
+		FullMethod: "/PeerService/GetAll",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).GetPeers(ctx, req.(*GetPeersRequest))
+		return srv.(PeerServiceServer).GetAll(ctx, req.(*GetPeersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PeerService_EnablePeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_Enable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EntityIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).EnablePeer(ctx, in)
+		return srv.(PeerServiceServer).Enable(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/EnablePeer",
+		FullMethod: "/PeerService/Enable",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).EnablePeer(ctx, req.(*EntityIdRequest))
+		return srv.(PeerServiceServer).Enable(ctx, req.(*EntityIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PeerService_DisablePeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_Disable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EntityIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).DisablePeer(ctx, in)
+		return srv.(PeerServiceServer).Disable(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/DisablePeer",
+		FullMethod: "/PeerService/Disable",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).DisablePeer(ctx, req.(*EntityIdRequest))
+		return srv.(PeerServiceServer).Disable(ctx, req.(*EntityIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PeerService_DownloadPeerConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_DownloadConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EntityIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).DownloadPeerConfig(ctx, in)
+		return srv.(PeerServiceServer).DownloadConfig(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/DownloadPeerConfig",
+		FullMethod: "/PeerService/DownloadConfig",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).DownloadPeerConfig(ctx, req.(*EntityIdRequest))
+		return srv.(PeerServiceServer).DownloadConfig(ctx, req.(*EntityIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PeerService_DownloadPeerQRCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PeerService_DownloadQRCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EntityIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PeerServiceServer).DownloadPeerQRCode(ctx, in)
+		return srv.(PeerServiceServer).DownloadQRCode(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/PeerService/DownloadPeerQRCode",
+		FullMethod: "/PeerService/DownloadQRCode",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PeerServiceServer).DownloadPeerQRCode(ctx, req.(*EntityIdRequest))
+		return srv.(PeerServiceServer).DownloadQRCode(ctx, req.(*EntityIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -353,40 +353,40 @@ var PeerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*PeerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AddPeer",
-			Handler:    _PeerService_AddPeer_Handler,
+			MethodName: "Add",
+			Handler:    _PeerService_Add_Handler,
 		},
 		{
-			MethodName: "RemovePeer",
-			Handler:    _PeerService_RemovePeer_Handler,
+			MethodName: "Remove",
+			Handler:    _PeerService_Remove_Handler,
 		},
 		{
-			MethodName: "UpdatePeer",
-			Handler:    _PeerService_UpdatePeer_Handler,
+			MethodName: "Update",
+			Handler:    _PeerService_Update_Handler,
 		},
 		{
-			MethodName: "GetPeer",
-			Handler:    _PeerService_GetPeer_Handler,
+			MethodName: "Get",
+			Handler:    _PeerService_Get_Handler,
 		},
 		{
-			MethodName: "GetPeers",
-			Handler:    _PeerService_GetPeers_Handler,
+			MethodName: "GetAll",
+			Handler:    _PeerService_GetAll_Handler,
 		},
 		{
-			MethodName: "EnablePeer",
-			Handler:    _PeerService_EnablePeer_Handler,
+			MethodName: "Enable",
+			Handler:    _PeerService_Enable_Handler,
 		},
 		{
-			MethodName: "DisablePeer",
-			Handler:    _PeerService_DisablePeer_Handler,
+			MethodName: "Disable",
+			Handler:    _PeerService_Disable_Handler,
 		},
 		{
-			MethodName: "DownloadPeerConfig",
-			Handler:    _PeerService_DownloadPeerConfig_Handler,
+			MethodName: "DownloadConfig",
+			Handler:    _PeerService_DownloadConfig_Handler,
 		},
 		{
-			MethodName: "DownloadPeerQRCode",
-			Handler:    _PeerService_DownloadPeerQRCode_Handler,
+			MethodName: "DownloadQRCode",
+			Handler:    _PeerService_DownloadQRCode_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

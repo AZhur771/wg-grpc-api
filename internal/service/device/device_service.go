@@ -1,22 +1,23 @@
 package deviceservice
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/AZhur771/wg-grpc-api/internal/app"
 	dt "github.com/AZhur771/wg-grpc-api/internal/dto"
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
-	peerservice "github.com/AZhur771/wg-grpc-api/internal/service/peer"
+	"github.com/AZhur771/wg-grpc-api/internal/service/common"
 	tmpl "github.com/AZhur771/wg-grpc-api/internal/template"
 	"github.com/google/uuid"
+	fieldmask_utils "github.com/mennanov/fieldmask-utils"
 	"go.uber.org/zap"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -64,7 +65,7 @@ func (ds *DeviceService) SyncDevices(ctx context.Context) error {
 		// sync peers with wg
 		for _, peer := range peers {
 			if errors := peer.IsValid(); len(errors) > 0 {
-				return peerservice.NewErrInvalidPeer(fmt.Errorf("device service: invalid peer data"), errors)
+				return common.NewErrInvalidData(fmt.Errorf("device service: invalid peer data"), errors)
 			}
 
 			peerInSync := false
@@ -92,7 +93,10 @@ func (ds *DeviceService) SyncDevices(ctx context.Context) error {
 }
 
 func (ds *DeviceService) restartDevice(devName string) error {
-	exec.Command("wg-quick", "down", devName).Run()
+	//nolint:staticcheck
+	if err := exec.Command("wg-quick", "down", devName).Run(); err != nil {
+		// ignore
+	}
 
 	return exec.Command("wg-quick", "up", devName).Run()
 }
@@ -102,12 +106,12 @@ func (ds *DeviceService) setupDevice(dev *entity.Device) error {
 
 	t, err := template.New("config").Parse(tmpl.ServerConfigTemplate)
 	if err != nil {
-		return fmt.Errorf("setup: %w", err)
+		return fmt.Errorf("device service: %w", err)
 	}
 
 	privateKey, err := exec.Command("wg", "genkey").Output()
 	if err != nil {
-		return fmt.Errorf("setup: %w", err)
+		return fmt.Errorf("device service: %w", err)
 	}
 
 	port := strings.Split(dev.Endpoint, ":")[1]
@@ -124,7 +128,7 @@ func (ds *DeviceService) setupDevice(dev *entity.Device) error {
 		InterfacePostUp:              dev.PostUp,
 		InterfacePreDown:             dev.PreDown,
 		InterfacePostDown:            dev.PostDown,
-		InterfacePersistentKeepAlive: dev.PersistentKeepAlive,
+		InterfacePersistentKeepAlive: int(dev.PersistentKeepAlive) / (1000 * 1000),
 	}
 
 	var buf bytes.Buffer
@@ -133,8 +137,28 @@ func (ds *DeviceService) setupDevice(dev *entity.Device) error {
 		return fmt.Errorf("setup: %w", err)
 	}
 
+	if b, err := ioutil.ReadFile(filename); err == nil {
+		scanner := bufio.NewScanner(bytes.NewReader(b))
+
+		writeLine := false
+
+		for scanner.Scan() {
+			l := scanner.Text()
+
+			if l == "[Peer]" {
+				writeLine = true
+			}
+
+			if writeLine {
+				buf.WriteString(l)
+			}
+		}
+	} else {
+		return fmt.Errorf("device service: %w", err)
+	}
+
 	if err := ioutil.WriteFile(filename, buf.Bytes(), 0o600); err != nil {
-		return fmt.Errorf("setup: %w", err)
+		return fmt.Errorf("device service: %w", err)
 	}
 
 	if err := ds.restartDevice(dev.Name); err != nil {
@@ -145,14 +169,9 @@ func (ds *DeviceService) setupDevice(dev *entity.Device) error {
 }
 
 func (ds *DeviceService) Add(ctx context.Context, dto dt.AddDeviceDTO) (*entity.Device, error) {
-	port, err := strconv.Atoi(strings.Split(dto.Endpoint, ":")[1])
-	if err != nil {
-		return nil, fmt.Errorf("device service: %w", err)
-	}
-
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
-		return nil, fmt.Errorf("peer service: %w", err)
+		return nil, fmt.Errorf("device service: %w", err)
 	}
 
 	dev := &entity.Device{
@@ -161,25 +180,19 @@ func (ds *DeviceService) Add(ctx context.Context, dto dt.AddDeviceDTO) (*entity.
 		Description:         dto.Description,
 		Endpoint:            dto.Endpoint,
 		Address:             dto.Address,
-		ListenPort:          port,
 		FirewallMark:        dto.FirewallMark,
-		PersistentKeepAlive: int(dto.PersistentKeepAlive),
+		PersistentKeepAlive: dto.PersistentKeepAlive,
 		MTU:                 dto.MTU,
 		DNS:                 dto.DNS,
 		Table:               dto.Table,
-	}
-
-	if len(dto.DNS) == 0 {
-		dev.DNS = strings.Join([]string{"9.9.9.9", "149.112.112.112"}, ",")
-	}
-
-	if dev.MTU == 0 {
-		// https://gist.github.com/nitred/f16850ca48c48c79bf422e90ee5b9d95
-		dev.MTU = 1420
+		PostUp:              dto.PostUp,
+		PostDown:            dto.PostDown,
+		PreUp:               dto.PreUp,
+		PreDown:             dto.PreDown,
 	}
 
 	if errors := dev.IsValid(); len(errors) > 0 {
-		return nil, NewErrInvalidDevice(fmt.Errorf("device service: invalid device data"), errors)
+		return nil, common.NewErrInvalidData(fmt.Errorf("device service: %w", ErrInvalidDeviceData), errors)
 	}
 
 	dev, err = ds.deviceRepo.Add(ctx, nil, dev)
@@ -203,29 +216,16 @@ func (ds *DeviceService) Add(ctx context.Context, dto dt.AddDeviceDTO) (*entity.
 	return dev.PopulateDynamicFields(wgdev)
 }
 
-func (ds *DeviceService) Update(ctx context.Context, dto dt.UpdateDeviceDTO) (*entity.Device, error) {
+func (ds *DeviceService) Update(ctx context.Context, dto dt.UpdateDeviceDTO, mask fieldmask_utils.Mask) (*entity.Device, error) {
 	dev, err := ds.deviceRepo.Get(ctx, nil, dto.ID)
 	if err != nil {
 		return nil, fmt.Errorf("device service: %w", err)
 	}
 
-	port, err := strconv.Atoi(strings.Split(dto.Endpoint, ":")[1])
-	if err != nil {
-		return nil, fmt.Errorf("device service: %w", err)
-	}
-
-	dev.Description = dto.Description
-	dev.Endpoint = dto.Endpoint
-	dev.Address = dto.Address
-	dev.ListenPort = port
-	dev.FirewallMark = dto.FirewallMark
-	dev.PersistentKeepAlive = int(dto.PersistentKeepAlive)
-	dev.MTU = dto.MTU
-	dev.DNS = dto.DNS
-	dev.Table = dto.Table
+	fieldmask_utils.StructToStruct(mask, dto, dev)
 
 	if errors := dev.IsValid(); len(errors) > 0 {
-		return nil, NewErrInvalidDevice(fmt.Errorf("device service: invalid device data"), errors)
+		return nil, common.NewErrInvalidData(fmt.Errorf("device service: %w", ErrInvalidDeviceData), errors)
 	}
 
 	if err := ds.setupDevice(dev); err != nil {
@@ -289,13 +289,13 @@ func (ds *DeviceService) Get(ctx context.Context, id uuid.UUID) (*entity.Device,
 func (ds *DeviceService) GetAll(ctx context.Context, dto dt.GetDevicesRequestDTO) (dt.GetDevicesResponseDTO, error) {
 	resp := dt.GetDevicesResponseDTO{}
 
-	if !dto.IsValid() {
-		return resp, fmt.Errorf("peer service: %w", ErrInvalidPaginationParams)
+	if errors := dto.IsValid(); len(errors) > 0 {
+		return resp, common.NewErrInvalidData(fmt.Errorf("device service: %w", ErrInvalidPaginationParams), errors)
 	}
 
 	total, err := ds.deviceRepo.Count(ctx, nil)
 	if err != nil {
-		return resp, fmt.Errorf("peer service: %w", err)
+		return resp, fmt.Errorf("device service: %w", err)
 	}
 
 	if dto.Limit == 0 {
@@ -310,7 +310,7 @@ func (ds *DeviceService) GetAll(ctx context.Context, dto dt.GetDevicesRequestDTO
 	for i, dev := range devices {
 		wgdev, err := ds.ctrl.Device(dev.Name)
 		if err != nil {
-			return resp, fmt.Errorf("device service: %w", err)
+			ds.logger.Error("failed to get device", zap.Error(err))
 		}
 
 		if devices[i], err = dev.PopulateDynamicFields(wgdev); err != nil {

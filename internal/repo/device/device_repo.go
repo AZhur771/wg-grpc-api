@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net"
 
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
 	"github.com/google/uuid"
@@ -33,6 +34,7 @@ func (d *DeviceRepo) Add(ctx context.Context, tx *sqlx.Tx, dev *entity.Device) (
 				address,
 				mtu,
 				dns,
+				persistent_keep_alive,
 				tble,
 				pre_up,
 				post_up,
@@ -47,6 +49,7 @@ func (d *DeviceRepo) Add(ctx context.Context, tx *sqlx.Tx, dev *entity.Device) (
 				:address,
 				:mtu,
 				:dns,
+				:persistent_keep_alive,
 				:tble,
 				:pre_up,
 				:post_up,
@@ -91,10 +94,12 @@ func (d *DeviceRepo) Update(ctx context.Context, tx *sqlx.Tx, dev *entity.Device
 			mtu = :mtu,
 			dns = :dns,
 			tble = :tble,
+			persistent_keep_alive = :persistent_keep_alive,
 			pre_up = :pre_up,
 			post_up = :post_up,
 			pre_down = :pre_down,
-			post_down = :post_down;
+			post_down = :post_down
+		RETURNING *;
 	`
 
 	var rows *sqlx.Rows
@@ -126,9 +131,9 @@ func (d *DeviceRepo) Remove(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) erro
 	var err error
 
 	if tx == nil {
-		_, err = d.db.ExecContext(ctx, query, id)
+		_, err = d.db.ExecContext(ctx, query, id.String())
 	} else {
-		_, err = tx.Exec(query, id)
+		_, err = tx.Exec(query, id.String())
 	}
 
 	if err != nil {
@@ -151,6 +156,7 @@ func (d *DeviceRepo) Get(ctx context.Context, tx *sqlx.Tx, id uuid.UUID) (*entit
 			address,
 			mtu,
 			dns,
+			persistent_keep_alive,
 			tble,
 			pre_up,
 			post_up,
@@ -188,6 +194,7 @@ func (d *DeviceRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, s
 			address,
 			mtu,
 			dns,
+			persistent_keep_alive,
 			tble,
 			pre_up,
 			post_up,
@@ -198,7 +205,7 @@ func (d *DeviceRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, s
 
 	if search != "" {
 		query += `
-			WHERE \"name\" ILIKE '%' || :search || '%'
+			WHERE "name" ILIKE '%' || :search || '%'
 				OR description ILIKE '%' || :search || '%'
 		`
 	}
@@ -287,21 +294,33 @@ func (d *DeviceRepo) GenerateAddress(ctx context.Context, tx *sqlx.Tx, dev *enti
 				FROM peer_address
 				WHERE device_id = $2
 			)
+			AND sub.ip != (
+				SELECT Set_masklen(address, 32)address
+				FROM device
+				WHERE id = $2
+			)
 			AND sub.ip > Set_masklen($1, 32);
 	`
 
 	var addr string
 	var err error
 
+	_, ipnet, err := net.ParseCIDR(dev.Address)
+	if err != nil {
+		return addr, fmt.Errorf("device repo: %w", err)
+	}
+
 	if tx == nil {
-		err = d.db.GetContext(ctx, &addr, query, dev.Address, dev.ID)
+		err = d.db.GetContext(ctx, &addr, query, ipnet.String(), dev.ID.String())
 	} else {
-		err = tx.Get(&addr, query, dev.Address, dev.ID)
+		err = tx.Get(&addr, query, ipnet.String(), dev.ID.String())
 	}
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return addr, ErrRunOutOfAddresses
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return addr, fmt.Errorf("device repo: %w", err)
 	}
 

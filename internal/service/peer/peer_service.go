@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"text/template"
 
 	"github.com/AZhur771/wg-grpc-api/internal/app"
 	dt "github.com/AZhur771/wg-grpc-api/internal/dto"
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
+	"github.com/AZhur771/wg-grpc-api/internal/service/common"
 	tmpl "github.com/AZhur771/wg-grpc-api/internal/template"
 	"github.com/google/uuid"
+	fieldmask_utils "github.com/mennanov/fieldmask-utils"
 	qrcode "github.com/skip2/go-qrcode"
 	"go.uber.org/zap"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -48,7 +51,15 @@ func (ps *PeerService) Add(ctx context.Context, dto dt.AddPeerDTO) (*entity.Peer
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
 
+	_, ipnet, err := net.ParseCIDR(device.Address)
+	if err != nil {
+		return nil, fmt.Errorf("peer service: %w", err)
+	}
+
+	ones, _ := ipnet.Mask.Size()
+
 	peer := &entity.Peer{
+		DeviceID:                    dto.DeviceID,
 		PrivateKey:                  privateKey,
 		PublicKey:                   publicKey,
 		PersistentKeepaliveInterval: dto.PersistentKeepAlive,
@@ -58,15 +69,6 @@ func (ps *PeerService) Add(ctx context.Context, dto dt.AddPeerDTO) (*entity.Peer
 		DNS:                         dto.DNS,
 		MTU:                         dto.MTU,
 		IsEnabled:                   true,
-	}
-
-	if len(dto.DNS) == 0 {
-		peer.DNS = strings.Join([]string{"9.9.9.9", "149.112.112.112"}, ",")
-	}
-
-	if peer.MTU == 0 {
-		// https://gist.github.com/nitred/f16850ca48c48c79bf422e90ee5b9d95
-		peer.MTU = 1384
 	}
 
 	if dto.AddPresharedKey {
@@ -88,13 +90,13 @@ func (ps *PeerService) Add(ctx context.Context, dto dt.AddPeerDTO) (*entity.Peer
 	if err != nil {
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
-	peer.AllowedIPs = []string{addr}
+	peer.AllowedIPs = []string{fmt.Sprintf("%s/%d", addr, ones)}
 
 	if errors := peer.IsValid(); len(errors) > 0 {
-		return nil, NewErrInvalidPeer(fmt.Errorf("peer service: invalid peer data"), errors)
+		return nil, common.NewErrInvalidData(fmt.Errorf("peer service: %w", ErrInvalidPeerData), errors)
 	}
 
-	peer, err = ps.peerRepo.Add(ctx, nil, peer)
+	peer, err = ps.peerRepo.Add(ctx, tx, peer)
 	if err != nil {
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
@@ -120,7 +122,7 @@ func (ps *PeerService) Add(ctx context.Context, dto dt.AddPeerDTO) (*entity.Peer
 	return peer.PopulateDynamicFields(&wgpeer), nil
 }
 
-func (ps *PeerService) Update(ctx context.Context, dto dt.UpdatePeerDTO) (*entity.Peer, error) {
+func (ps *PeerService) Update(ctx context.Context, dto dt.UpdatePeerDTO, mask fieldmask_utils.Mask) (*entity.Peer, error) {
 	peer, err := ps.peerRepo.Get(ctx, nil, dto.ID)
 	if err != nil {
 		return nil, fmt.Errorf("peer service: %w", err)
@@ -131,11 +133,7 @@ func (ps *PeerService) Update(ctx context.Context, dto dt.UpdatePeerDTO) (*entit
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
 
-	peer.Email = dto.Email
-	peer.Description = dto.Description
-	peer.PersistentKeepaliveInterval = dto.PersistentKeepAlive
-	peer.MTU = dto.MTU
-	peer.DNS = dto.DNS
+	fieldmask_utils.StructToStruct(mask, dto, peer)
 
 	if peer.HasPresharedKey && dto.RemovePresharedKey {
 		peer.HasPresharedKey = false
@@ -152,7 +150,7 @@ func (ps *PeerService) Update(ctx context.Context, dto dt.UpdatePeerDTO) (*entit
 	}
 
 	if errors := peer.IsValid(); len(errors) > 0 {
-		return nil, NewErrInvalidPeer(fmt.Errorf("peer service: invalid peer data"), errors)
+		return nil, common.NewErrInvalidData(fmt.Errorf("peer service: %w", ErrInvalidPeerData), errors)
 	}
 
 	peerConfig, err := peer.ToPeerConfig()
@@ -234,8 +232,8 @@ func (ps *PeerService) Get(ctx context.Context, id uuid.UUID) (*entity.Peer, err
 func (ps *PeerService) GetAll(ctx context.Context, dto dt.GetPeersRequestDTO) (dt.GetPeersResponseDTO, error) {
 	resp := dt.GetPeersResponseDTO{}
 
-	if !dto.IsValid() {
-		return resp, fmt.Errorf("peer service: %w", ErrInvalidPaginationParams)
+	if errors := dto.IsValid(); len(errors) > 0 {
+		return resp, common.NewErrInvalidData(fmt.Errorf("peer service: %w", ErrInvalidPaginationParams), errors)
 	}
 
 	total, err := ps.peerRepo.Count(ctx, nil, dto.DeviceID)
@@ -356,7 +354,7 @@ func (ps *PeerService) DownloadConfig(ctx context.Context, id uuid.UUID) (dt.Dow
 		// peer data (device)
 		PeerPublicKey:           device.PublicKey.String(),
 		PeerPresharedKey:        peer.PresharedKey.String(),
-		PeerEndpoint:            fmt.Sprintf("%s:%d", device.Endpoint, device.ListenPort),
+		PeerEndpoint:            device.Endpoint,
 		PeerAllowedIPs:          []string{"0.0.0.0/0"},
 		PeerPersistentKeepalive: int(peer.PersistentKeepaliveInterval.Seconds()),
 	}

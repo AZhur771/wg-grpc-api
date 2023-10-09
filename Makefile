@@ -48,4 +48,7 @@ test-proto:
 		-r \
 		repl
 
+cert:
+	cd test_certs; ./gen.sh; cd ..
+
 .PHONY: generate protoc-version install-lint-deps lint go-version

@@ -31,7 +31,9 @@ type ServerConfigTmplData struct {
 var ClientConfigTemplate = `[Interface]
 PrivateKey = {{ .InterfacePrivateKey }}
 Address = {{ StringsJoin .InterfaceAddress ", " }}
+{{ if ne .InterfaceDNS "" -}}
 DNS = {{ .InterfaceDNS }}
+{{- end}}
 {{ if ne .InterfaceMTU 0 -}}
 MTU = {{ .InterfaceMTU }}
 {{- end}}
@@ -80,4 +82,5 @@ PreDown = {{ .InterfacePreDown }}
 PostDown = {{ .InterfacePostDown }}
 {{- end}}
 SaveConfig = true
+
 `

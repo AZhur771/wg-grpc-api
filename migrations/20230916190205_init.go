@@ -20,21 +20,23 @@ func upInit(ctx context.Context, tx *sql.Tx) error {
 	_, err = tx.Exec(`
 			CREATE TABLE IF NOT EXISTS device
 			(
-				id          UUID DEFAULT Gen_random_uuid() PRIMARY KEY,
-				name        TEXT DEFAULT ('wg' || Nextval('device_num') - 1),
-				private_key TEXT NOT NULL,
-				description TEXT,
-				endpoint    TEXT NOT NULL,
-				fw_mark     INT,
-				address     INET NOT NULL,
-				mtu         INT NOT NULL,
-				dns         TEXT,
-				tble        TEXT,
-				pre_up      TEXT,
-				post_up     TEXT,
-				pre_down    TEXT,
-				post_down   TEXT,
-				UNIQUE(name)
+				id          		  UUID DEFAULT Gen_random_uuid() PRIMARY KEY,
+				name        		  TEXT DEFAULT ('wg' || Nextval('device_num') - 1),
+				private_key 		  TEXT NOT NULL,
+				description 		  TEXT,
+				endpoint    		  TEXT NOT NULL,
+				fw_mark     		  INT,
+				address     		  INET NOT NULL,
+				dns         		  TEXT,
+				mtu         		  INT,
+				persistent_keep_alive INT,
+				tble                  TEXT,
+				pre_up                TEXT,
+				post_up               TEXT,
+				pre_down              TEXT,
+				post_down   		  TEXT,
+				UNIQUE(name),
+				UNIQUE(endpoint)
 			); 
 		`,
 	)
@@ -49,6 +51,7 @@ func upInit(ctx context.Context, tx *sql.Tx) error {
 				device_id             UUID NOT NULL,
 				name                  TEXT NOT NULL,
 				private_key           TEXT NOT NULL,
+				preshared_key		  TEXT,
 				description           TEXT,
 				email                 TEXT,
 				dns                   TEXT,

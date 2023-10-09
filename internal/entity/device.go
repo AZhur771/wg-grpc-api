@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -17,7 +18,6 @@ type Device struct {
 	Type                wgtypes.DeviceType
 	PrivateKey          wgtypes.Key
 	PublicKey           wgtypes.Key
-	ListenPort          int
 	FirewallMark        int
 	MaxPeersCount       int
 	CurrentPeersCount   int
@@ -26,7 +26,7 @@ type Device struct {
 	Table               string
 	MTU                 int
 	DNS                 string
-	PersistentKeepAlive int
+	PersistentKeepAlive time.Duration
 	PreUp               string
 	PreDown             string
 	PostUp              string
@@ -73,13 +73,6 @@ func (d *Device) IsValid() []*errdetails.BadRequest_FieldViolation {
 		})
 	}
 
-	if d.MTU == 0 {
-		errors = append(errors, &errdetails.BadRequest_FieldViolation{
-			Field:       "mtu",
-			Description: "mtu should not be empty",
-		})
-	}
-
 	if d.DNS != "" {
 		for _, addr := range strings.Split(d.DNS, ",") {
 			ip := net.ParseIP(addr)
@@ -90,11 +83,6 @@ func (d *Device) IsValid() []*errdetails.BadRequest_FieldViolation {
 				})
 			}
 		}
-	} else {
-		errors = append(errors, &errdetails.BadRequest_FieldViolation{
-			Field:       "dns",
-			Description: "dns should not be empty",
-		})
 	}
 
 	if len(d.Description) > 40 {

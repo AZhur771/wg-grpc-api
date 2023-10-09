@@ -86,7 +86,6 @@ func generateTestDevice() (*entity.Device, error) {
 		Address:       "10.6.0.1/24",
 		PrivateKey:    privateKey,
 		PublicKey:     publicKey,
-		ListenPort:    51820,
 		MaxPeersCount: 255,
 	}, nil
 }

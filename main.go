@@ -78,8 +78,8 @@ func main() {
 	logErrorAndExit(err)
 	defer logger.Sync()
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	defer stop()
 
 	mdb, err := sql.Open("pgx", database.GetConnectionString(cfg))
 	logErrorAndExit(err)
@@ -103,7 +103,5 @@ func main() {
 	server, err := server.NewServer(ctx, logger, peerService, deviceService, cfg)
 	logErrorAndExit(err)
 
-	server.Run(ctx, cancel)
-
-	os.Exit(1) //nolint:gocritic
+	server.Run(ctx, stop)
 }

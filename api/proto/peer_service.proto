@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 import "google/api/annotations.proto";
@@ -15,7 +16,7 @@ service PeerService {
     description: "Service to configure wireguard peers"
   };
 
-  rpc AddPeer(AddPeerRequest) returns (EntityIdRequest) {
+  rpc Add(AddPeerRequest) returns (EntityIdRequest) {
     option (google.api.http) = {
       post: "/api/peers"
       body: "*"
@@ -33,7 +34,7 @@ service PeerService {
     };
   };
 
-  rpc RemovePeer(EntityIdRequest) returns (google.protobuf.Empty) {
+  rpc Remove(EntityIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/api/peers/{id}"
       body: "*"
@@ -51,10 +52,14 @@ service PeerService {
     };
   };
 
-  rpc UpdatePeer(UpdatePeerRequest) returns (google.protobuf.Empty) {
+  rpc Update(UpdatePeerRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      put: "/api/peers/{id}"
+      put: "/api/peers/{peer.id}"
       body: "*"
+      additional_bindings {
+        patch: "/api/peers/{peer.id}"
+        body: "peer"
+      }
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Update peer by id"
@@ -69,7 +74,7 @@ service PeerService {
     };
   };
 
-  rpc GetPeer(EntityIdRequest) returns (Peer) {
+  rpc Get(EntityIdRequest) returns (Peer) {
     option (google.api.http) = {
       get: "/api/peers/{id}"
     };
@@ -86,7 +91,7 @@ service PeerService {
     };
   };
 
-  rpc GetPeers(GetPeersRequest) returns (GetPeersResponse) {
+  rpc GetAll(GetPeersRequest) returns (GetPeersResponse) {
     option (google.api.http) = {
       get: "/api/peers"
     };
@@ -103,7 +108,7 @@ service PeerService {
     };
   };
 
-  rpc EnablePeer(EntityIdRequest) returns (google.protobuf.Empty) {
+  rpc Enable(EntityIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/peers/{id}/enable"
       body: "*"
@@ -121,7 +126,7 @@ service PeerService {
     };
   };
 
-  rpc DisablePeer(EntityIdRequest) returns (google.protobuf.Empty) {
+  rpc Disable(EntityIdRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/peers/{id}/disable"
       body: "*"
@@ -139,7 +144,7 @@ service PeerService {
     };
   };
 
-  rpc DownloadPeerConfig(EntityIdRequest) returns (DownloadFileResponse) {
+  rpc DownloadConfig(EntityIdRequest) returns (DownloadFileResponse) {
     option (google.api.http) = {
       get: "/api/peers/{id}/config"
     };
@@ -156,7 +161,7 @@ service PeerService {
     };
   };
 
-  rpc DownloadPeerQRCode(EntityIdRequest) returns (DownloadFileResponse) {
+  rpc DownloadQRCode(EntityIdRequest) returns (DownloadFileResponse) {
     option (google.api.http) = {
       get: "/api/peers/{id}/qr"
     };
@@ -221,7 +226,7 @@ message AddPeerRequest {
   int32 mtu = 8;
 }
 
-message UpdatePeerRequest {
+message UpdatePeerData {
   string id = 1;
   bool add_preshared_key = 2;
   bool remove_preshared_key = 3;
@@ -231,6 +236,11 @@ message UpdatePeerRequest {
   string email = 7;
   string dns = 8;
   int32 mtu = 9;
+}
+
+message UpdatePeerRequest {
+  UpdatePeerData peer = 1;
+  google.protobuf.FieldMask field_mask = 2;
 }
 
 message GetPeersRequest {

@@ -3,45 +3,41 @@ package certs
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
-	"log"
 
 	"google.golang.org/grpc/credentials"
 )
 
-func getTLSConfig(host, caCertPath, certPath, keyPath string, certOpt tls.ClientAuthType) (*tls.Config, error) {
-	var caCert []byte
-	var err error
-	var caCertPool *x509.CertPool
-	if certOpt > tls.RequestClientCert {
-		caCert, err = ioutil.ReadFile(caCertPath)
-		if err != nil {
-			log.Fatal("Error opening cert file", caCertPath, ", error ", err)
-		}
-		caCertPool = x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-	}
-
-	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+func LoadTLSCredentials(certPath, keyPath string) (credentials.TransportCredentials, error) {
+	serverCert, err := tls.LoadX509KeyPair(certPath, keyPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return &tls.Config{
-		ServerName: host,
-		ClientAuth: certOpt,
-		ClientCAs:  caCertPool,
-		Certificates: []tls.Certificate{
-			cert,
-		},
-		MinVersion: tls.VersionTLS12,
-	}, nil
+	config := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.NoClientCert,
+		MinVersion:   tls.VersionTLS12,
+	}
+
+	return credentials.NewTLS(config), nil
 }
 
-func LoadTLSCredentials(host, caCertPath, certPath, keyPath string, certOpt tls.ClientAuthType) (credentials.TransportCredentials, error) {
-	config, err := getTLSConfig(host, caCertPath, certPath, keyPath, certOpt)
+func LoadCATLSCredentials(caCertPath string) (credentials.TransportCredentials, error) {
+	pemServerCA, err := ioutil.ReadFile(caCertPath)
 	if err != nil {
 		return nil, err
+	}
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(pemServerCA) {
+		return nil, fmt.Errorf("failed to add server CA's certificate")
+	}
+
+	config := &tls.Config{
+		RootCAs:    certPool,
+		MinVersion: tls.VersionTLS12,
 	}
 
 	return credentials.NewTLS(config), nil

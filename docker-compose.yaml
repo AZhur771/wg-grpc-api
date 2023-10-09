@@ -42,9 +42,7 @@ services:
     environment:
       - WG_GRPC_API_ADDRESS: 10.6.0.1/24
       - WG_GRPC_API_HOST": "127.0.0.1"
-      - WG_GRPC_API_PORT": "51821"
-      - WG_GRPC_API_GATEWAY_PORT": "51822"
-      - WG_GRPC_API_GATEWAY": "true"
+      - WG_GRPC_API_PORT": "3000"
       - WG_GRPC_API_SWAGGER": "true"
       - WG_GRPC_API_TOKENS": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTY4OTc4NTEwNSwiZXhwIjoxNjg5Nzg4NzA1fQ.lQWZuJVDmz1dUoYz8Y1PdKZxL4pJpIbHCf4Etfm4hx4"
       - WG_GRPC_API_DB_HOST": "postgres"
@@ -56,8 +54,7 @@ services:
       - postgres
     ports:
       - 51820:51820/udp
-      - 127.0.0.1:51821:51821/tcp
-      - 127.0.0.1:51822:51822/tcp
+      - 127.0.0.1:3000:3000/tcp
     sysctls:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1

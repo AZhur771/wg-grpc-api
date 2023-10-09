@@ -9,6 +9,7 @@ import (
 	"github.com/AZhur771/wg-grpc-api/internal/entity"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	fieldmask_utils "github.com/mennanov/fieldmask-utils"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
@@ -21,7 +22,7 @@ type WgCtrl interface {
 
 type PeerService interface {
 	Add(ctx context.Context, dt dto.AddPeerDTO) (*entity.Peer, error)
-	Update(ctx context.Context, dt dto.UpdatePeerDTO) (*entity.Peer, error)
+	Update(ctx context.Context, dt dto.UpdatePeerDTO, mask fieldmask_utils.Mask) (*entity.Peer, error)
 	Remove(ctx context.Context, id uuid.UUID) error
 	Get(ctx context.Context, id uuid.UUID) (*entity.Peer, error)
 	GetAll(ctx context.Context, dt dto.GetPeersRequestDTO) (dto.GetPeersResponseDTO, error)
@@ -33,7 +34,7 @@ type PeerService interface {
 
 type DeviceService interface {
 	Add(ctx context.Context, dt dto.AddDeviceDTO) (*entity.Device, error)
-	Update(ctx context.Context, dt dto.UpdateDeviceDTO) (*entity.Device, error)
+	Update(ctx context.Context, dt dto.UpdateDeviceDTO, mask fieldmask_utils.Mask) (*entity.Device, error)
 	Remove(ctx context.Context, id uuid.UUID) error
 	Get(ctx context.Context, id uuid.UUID) (*entity.Device, error)
 	GetAll(ctx context.Context, dt dto.GetDevicesRequestDTO) (dto.GetDevicesResponseDTO, error)
