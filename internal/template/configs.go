@@ -1,11 +1,6 @@
 package template
 
-type ClientConfigTmplData struct {
-	InterfacePrivateKey string
-	InterfaceAddress    []string
-	InterfaceDNS        string
-	InterfaceMTU        int
-
+type PeerConfigTmplData struct {
 	PeerPublicKey           string
 	PeerPresharedKey        string
 	PeerEndpoint            string
@@ -13,47 +8,28 @@ type ClientConfigTmplData struct {
 	PeerPersistentKeepalive int
 }
 
-type ServerConfigTmplData struct {
-	InterfacePrivateKey          string
-	InterfaceAddress             string
-	InterfacePort                string
-	InterfaceDNS                 string
-	InterfaceMTU                 int
-	InterfaceTable               string
-	InterfaceFwMark              int
-	InterfacePreUp               string
-	InterfacePostUp              string
-	InterfacePreDown             string
-	InterfacePostDown            string
-	InterfacePersistentKeepAlive int
+type ConfigTmplData struct {
+	InterfacePrivateKey string
+	InterfaceAddress    []string
+	InterfacePort       string
+	InterfaceDNS        string
+	InterfaceMTU        int
+	InterfaceTable      string
+	InterfaceFwMark     int
+	InterfacePreUp      string
+	InterfacePostUp     string
+	InterfacePreDown    string
+	InterfacePostDown   string
+	InterfacePeers      []PeerConfigTmplData
+	SaveConfig          bool
 }
 
-var ClientConfigTemplate = `[Interface]
+var ConfigTemplate = `[Interface]
 PrivateKey = {{ .InterfacePrivateKey }}
 Address = {{ StringsJoin .InterfaceAddress ", " }}
-{{ if ne .InterfaceDNS "" -}}
-DNS = {{ .InterfaceDNS }}
-{{- end}}
-{{ if ne .InterfaceMTU 0 -}}
-MTU = {{ .InterfaceMTU }}
-{{- end}}
-
-[Peer]
-PublicKey = {{ .PeerPublicKey }}
-{{ if ne .PeerPresharedKey "" -}}
-PresharedKey = {{ .PeerPresharedKey }}
-{{- end}}
-Endpoint = {{ .PeerEndpoint }}
-AllowedIPs = {{ StringsJoin .PeerAllowedIPs ", " }}
-{{ if ne .PeerPersistentKeepalive 0 -}}
-PersistentKeepalive = {{ .PeerPersistentKeepalive }}
-{{- end}}
-`
-
-var ServerConfigTemplate = `[Interface]
-PrivateKey = {{ .InterfacePrivateKey }}
-Address = {{ .InterfaceAddress }}
+{{ if ne .InterfacePort "" -}}
 ListenPort = {{ .InterfacePort }}
+{{- end}}
 {{ if ne .InterfaceMTU 0 -}}
 MTU = {{ .InterfaceMTU }}
 {{- end}}
@@ -64,23 +40,36 @@ DNS = {{ .InterfaceDNS }}
 FwMark = {{ .InterfaceFwMark }}
 {{- end}}
 {{ if ne .InterfaceTable "" -}}
-InterfaceTable = {{ .InterfaceTable }}
-{{- end}}
-{{ if ne .InterfacePersistentKeepAlive 0 -}}
-PersistentKeepalive = {{ .InterfacePersistentKeepAlive }}
+Table = {{ .InterfaceTable }}
 {{- end}}
 {{ if ne .InterfacePreUp "" -}}
 PreUp = {{ .InterfacePreUp }}
 {{- end}}
-{{ if ne .InterfacePostUp "" -}}
-PostUp = {{ .InterfacePostUp }}
-{{- end}}
 {{ if ne .InterfacePreDown "" -}}
 PreDown = {{ .InterfacePreDown }}
+{{- end}}
+{{ if ne .InterfacePostUp "" -}}
+PostUp = {{ .InterfacePostUp }}
 {{- end}}
 {{ if ne .InterfacePostDown "" -}}
 PostDown = {{ .InterfacePostDown }}
 {{- end}}
+{{ if .SaveConfig -}}
 SaveConfig = true
+{{- end}}
 
+{{range .InterfacePeers}}
+[Peer]
+PublicKey = {{ .PeerPublicKey }}
+{{ if ne .PeerPresharedKey "" -}}
+PresharedKey = {{ .PeerPresharedKey }}
+{{- end}}
+{{ if ne .PeerEndpoint "" -}}
+Endpoint = {{ .PeerEndpoint }}
+{{- end}}
+AllowedIPs = {{ StringsJoin .PeerAllowedIPs ", " }}
+{{ if ne .PeerPersistentKeepalive 0 -}}
+PersistentKeepalive = {{ .PeerPersistentKeepalive }}
+{{end}}
+{{end}}
 `

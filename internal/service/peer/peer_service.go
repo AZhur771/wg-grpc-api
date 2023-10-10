@@ -71,6 +71,15 @@ func (ps *PeerService) Add(ctx context.Context, dto dt.AddPeerDTO) (*entity.Peer
 		IsEnabled:                   true,
 	}
 
+	if peer.DNS == "" {
+		peer.DNS = "9.9.9.9, 149.112.112.112"
+	}
+
+	if peer.MTU == 0 {
+		// https://gist.github.com/nitred/f16850ca48c48c79bf422e90ee5b9d95
+		peer.MTU = 1384
+	}
+
 	if dto.AddPresharedKey {
 		peer.HasPresharedKey = true
 		presharedKey, err := wgtypes.GenerateKey()
@@ -105,7 +114,7 @@ func (ps *PeerService) Add(ctx context.Context, dto dt.AddPeerDTO) (*entity.Peer
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
 
-	peerConfig, err := peer.ToPeerConfig()
+	peerConfig, err := peer.ToPeerConfig(device)
 	if err != nil {
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
@@ -135,6 +144,15 @@ func (ps *PeerService) Update(ctx context.Context, dto dt.UpdatePeerDTO, mask fi
 
 	fieldmask_utils.StructToStruct(mask, dto, peer)
 
+	if peer.DNS == "" {
+		peer.DNS = "9.9.9.9, 149.112.112.112"
+	}
+
+	if peer.MTU == 0 {
+		// https://gist.github.com/nitred/f16850ca48c48c79bf422e90ee5b9d95
+		peer.MTU = 1384
+	}
+
 	if peer.HasPresharedKey && dto.RemovePresharedKey {
 		peer.HasPresharedKey = false
 		peer.PresharedKey = wgtypes.Key{} // non-nil zero value key clears preshared key
@@ -153,7 +171,7 @@ func (ps *PeerService) Update(ctx context.Context, dto dt.UpdatePeerDTO, mask fi
 		return nil, common.NewErrInvalidData(fmt.Errorf("peer service: %w", ErrInvalidPeerData), errors)
 	}
 
-	peerConfig, err := peer.ToPeerConfig()
+	peerConfig, err := peer.ToPeerConfig(device)
 	if err != nil {
 		return nil, fmt.Errorf("peer service: %w", err)
 	}
@@ -182,12 +200,17 @@ func (ps *PeerService) Remove(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("peer service: %w", err)
 	}
 
+	device, err := ps.deviceService.Get(ctx, peer.DeviceID)
+	if err != nil {
+		return fmt.Errorf("peer service: %w", err)
+	}
+
 	if err := ps.peerRepo.Remove(ctx, nil, id); err != nil {
 		return fmt.Errorf("peer service: %w", err)
 	}
 
 	if peer.IsEnabled {
-		peerConfig, err := peer.ToPeerConfig()
+		peerConfig, err := peer.ToPeerConfig(device)
 		if err != nil {
 			return fmt.Errorf("peer service: %w", err)
 		}
@@ -263,8 +286,13 @@ func (ps *PeerService) Enable(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("peer service: %w", err)
 	}
 
+	device, err := ps.deviceService.Get(ctx, peer.DeviceID)
+	if err != nil {
+		return fmt.Errorf("peer service: %w", err)
+	}
+
 	if !peer.IsEnabled {
-		peerConfig, err := peer.ToPeerConfig()
+		peerConfig, err := peer.ToPeerConfig(device)
 		if err != nil {
 			return fmt.Errorf("peer service: %w", err)
 		}
@@ -293,8 +321,13 @@ func (ps *PeerService) Disable(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("peer service: %w", err)
 	}
 
+	device, err := ps.deviceService.Get(ctx, peer.DeviceID)
+	if err != nil {
+		return fmt.Errorf("peer service: %w", err)
+	}
+
 	if peer.IsEnabled {
-		peerConfig, err := peer.ToPeerConfig()
+		peerConfig, err := peer.ToPeerConfig(device)
 		if err != nil {
 			return fmt.Errorf("peer service: %w", err)
 		}
@@ -337,26 +370,29 @@ func (ps *PeerService) DownloadConfig(ctx context.Context, id uuid.UUID) (dt.Dow
 		template.FuncMap{
 			"StringsJoin": strings.Join,
 		},
-	).Parse(tmpl.ClientConfigTemplate)
+	).Parse(tmpl.ConfigTemplate)
 	if err != nil {
 		return downloadFileDTO, fmt.Errorf("peer service: %w", err)
 	}
 
 	var buf bytes.Buffer
 
-	tmplData := tmpl.ClientConfigTmplData{
+	tmplData := tmpl.ConfigTmplData{
 		// interface data
 		InterfacePrivateKey: peer.PrivateKey.String(),
 		InterfaceAddress:    peer.AllowedIPs,
 		InterfaceDNS:        peer.DNS,
 		InterfaceMTU:        peer.MTU,
 
-		// peer data (device)
-		PeerPublicKey:           device.PublicKey.String(),
-		PeerPresharedKey:        peer.PresharedKey.String(),
-		PeerEndpoint:            device.Endpoint,
-		PeerAllowedIPs:          []string{"0.0.0.0/0"},
-		PeerPersistentKeepalive: int(peer.PersistentKeepaliveInterval.Seconds()),
+		InterfacePeers: []tmpl.PeerConfigTmplData{
+			{
+				PeerPublicKey:           device.PublicKey.String(),
+				PeerPresharedKey:        peer.PresharedKey.String(),
+				PeerEndpoint:            device.Endpoint,
+				PeerAllowedIPs:          []string{"0.0.0.0/0"},
+				PeerPersistentKeepalive: int(peer.PersistentKeepaliveInterval) / (1000 * 1000 * 1000),
+			},
+		},
 	}
 
 	if err := t.Execute(&buf, tmplData); err != nil {

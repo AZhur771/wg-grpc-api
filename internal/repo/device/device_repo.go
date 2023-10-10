@@ -290,12 +290,12 @@ func (d *DeviceRepo) GenerateAddress(ctx context.Context, tx *sqlx.Tx, dev *enti
 					) AS ip
 			) AS sub
 		WHERE sub.ip NOT IN (
-				SELECT address
+				SELECT Set_masklen(address, 32)
 				FROM peer_address
 				WHERE device_id = $2
 			)
 			AND sub.ip != (
-				SELECT Set_masklen(address, 32)address
+				SELECT Set_masklen(address, 32)
 				FROM device
 				WHERE id = $2
 			)

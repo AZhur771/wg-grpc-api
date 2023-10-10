@@ -75,7 +75,7 @@ func (d *Device) IsValid() []*errdetails.BadRequest_FieldViolation {
 
 	if d.DNS != "" {
 		for _, addr := range strings.Split(d.DNS, ",") {
-			ip := net.ParseIP(addr)
+			ip := net.ParseIP(strings.TrimSpace(addr))
 			if ip == nil {
 				errors = append(errors, &errdetails.BadRequest_FieldViolation{
 					Field:       "dns",

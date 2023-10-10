@@ -57,7 +57,7 @@ func (p *Peer) IsValid() []*errdetails.BadRequest_FieldViolation {
 
 	if p.DNS != "" {
 		for _, addr := range strings.Split(p.DNS, ",") {
-			ip := net.ParseIP(addr)
+			ip := net.ParseIP(strings.TrimSpace(addr))
 			if ip == nil {
 				errors = append(errors, &errdetails.BadRequest_FieldViolation{
 					Field:       "dns",
@@ -88,30 +88,38 @@ func (p *Peer) PopulateDynamicFields(wgpeer *wgtypes.Peer) *Peer {
 	return p
 }
 
-func (p *Peer) ToPeerConfig() (*wgtypes.PeerConfig, error) {
+func (p *Peer) ToPeerConfig(dev *Device) (*wgtypes.PeerConfig, error) {
 	allowedIPs, err := parseAllowedIPs(p.AllowedIPs)
 	if err != nil {
 		return nil, fmt.Errorf("peer: %w", err)
 	}
 
-	return &wgtypes.PeerConfig{
-		PublicKey:                   p.PublicKey,
-		PresharedKey:                &p.PresharedKey,
-		Endpoint:                    p.Endpoint,
-		PersistentKeepaliveInterval: &p.PersistentKeepaliveInterval,
-		AllowedIPs:                  allowedIPs,
-	}, nil
+	conf := &wgtypes.PeerConfig{
+		PublicKey:    p.PublicKey,
+		PresharedKey: &p.PresharedKey,
+		Endpoint:     p.Endpoint,
+		AllowedIPs:   allowedIPs,
+	}
+
+	if dev.PersistentKeepAlive != 0 {
+		conf.PersistentKeepaliveInterval = &dev.PersistentKeepAlive
+	}
+
+	return conf, nil
 }
 
 func parseAllowedIPs(allowedIPs []string) ([]net.IPNet, error) {
 	res := make([]net.IPNet, 0, len(allowedIPs))
 
 	for _, allowedIP := range allowedIPs {
-		_, ipnet, err := net.ParseCIDR(allowedIP)
+		ip, _, err := net.ParseCIDR(allowedIP)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, *ipnet)
+		res = append(res, net.IPNet{
+			IP:   ip,
+			Mask: []byte{255, 255, 255, 255},
+		})
 	}
 
 	return res, nil

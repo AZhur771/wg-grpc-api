@@ -14,6 +14,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
 	sqlx "github.com/jmoiron/sqlx"
+	fieldmask_utils "github.com/mennanov/fieldmask-utils"
 	wgtypes "golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
@@ -239,18 +240,18 @@ func (mr *MockPeerServiceMockRecorder) Remove(ctx, id interface{}) *gomock.Call 
 }
 
 // Update mocks base method.
-func (m *MockPeerService) Update(ctx context.Context, dt dto.UpdatePeerDTO) (*entity.Peer, error) {
+func (m *MockPeerService) Update(ctx context.Context, dt dto.UpdatePeerDTO, mask fieldmask_utils.Mask) (*entity.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, dt)
+	ret := m.ctrl.Call(m, "Update", ctx, dt, mask)
 	ret0, _ := ret[0].(*entity.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockPeerServiceMockRecorder) Update(ctx, dt interface{}) *gomock.Call {
+func (mr *MockPeerServiceMockRecorder) Update(ctx, dt, mask interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerService)(nil).Update), ctx, dt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerService)(nil).Update), ctx, dt, mask)
 }
 
 // MockDeviceService is a mock of DeviceService interface.
@@ -380,18 +381,18 @@ func (mr *MockDeviceServiceMockRecorder) Remove(ctx, id interface{}) *gomock.Cal
 }
 
 // Update mocks base method.
-func (m *MockDeviceService) Update(ctx context.Context, dt dto.UpdateDeviceDTO) (*entity.Device, error) {
+func (m *MockDeviceService) Update(ctx context.Context, dt dto.UpdateDeviceDTO, mask fieldmask_utils.Mask) (*entity.Device, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, dt)
+	ret := m.ctrl.Call(m, "Update", ctx, dt, mask)
 	ret0, _ := ret[0].(*entity.Device)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockDeviceServiceMockRecorder) Update(ctx, dt interface{}) *gomock.Call {
+func (mr *MockDeviceServiceMockRecorder) Update(ctx, dt, mask interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDeviceService)(nil).Update), ctx, dt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDeviceService)(nil).Update), ctx, dt, mask)
 }
 
 // MockPeerRepo is a mock of PeerRepo interface.

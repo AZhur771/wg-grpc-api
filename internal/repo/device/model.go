@@ -40,7 +40,7 @@ func (d *DeviceModel) FromEntity(dev *entity.Device) *DeviceModel {
 	d.Address = dev.Address
 	d.Mtu = dev.MTU
 	d.DNS = dev.DNS
-	d.PersistentKeepAlive = int(dev.PersistentKeepAlive) / (1000 * 1000)
+	d.PersistentKeepAlive = int(dev.PersistentKeepAlive) / (1000 * 1000 * 1000)
 	d.Tble = dev.Table
 	d.PreUp = dev.PreUp
 	d.PostUp = dev.PostUp
@@ -67,7 +67,7 @@ func (d *DeviceModel) ToEntity() (*entity.Device, error) {
 	dev.Address = d.Address
 	dev.MTU = d.Mtu
 	dev.DNS = d.DNS
-	dev.PersistentKeepAlive = time.Duration(d.PersistentKeepAlive * 1000 * 10000)
+	dev.PersistentKeepAlive = time.Duration(d.PersistentKeepAlive) * time.Second
 	dev.Table = d.Tble
 	dev.PreUp = d.PreUp
 	dev.PostUp = d.PostUp

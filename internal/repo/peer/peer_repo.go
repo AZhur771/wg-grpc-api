@@ -245,7 +245,7 @@ func (p *PeerRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, sea
 	`
 
 	if deviceID != uuid.Nil {
-		query = strings.Replace(query, "###device_id###", "AND device_id := device_id", 1)
+		query = strings.Replace(query, "###device_id###", "AND device_id = :device_id", 1)
 	} else {
 		query = strings.Replace(query, "###device_id###", "", 1)
 	}
@@ -265,12 +265,12 @@ func (p *PeerRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, sea
 		Search   string
 		Skip     int
 		Limit    int
-		DeviceID uuid.UUID `db:"device_id" sql:",type:uuid"`
+		DeviceID string `db:"device_id" sql:",type:uuid"`
 	}{
 		Search:   search,
 		Skip:     skip,
 		Limit:    limit,
-		DeviceID: deviceID,
+		DeviceID: deviceID.String(),
 	}
 
 	if tx == nil {
@@ -333,7 +333,7 @@ func (p *PeerRepo) Count(ctx context.Context, tx *sqlx.Tx, deviceID uuid.UUID) (
 	query := "SELECT count(1) FROM peer ###device_id###;"
 
 	if deviceID != uuid.Nil {
-		query = strings.Replace(query, "###device_id###", "WHERE device_id := :device_id", 1)
+		query = strings.Replace(query, "###device_id###", "WHERE device_id = :device_id", 1)
 	} else {
 		query = strings.Replace(query, "###device_id###", "", 1)
 	}
@@ -343,9 +343,9 @@ func (p *PeerRepo) Count(ctx context.Context, tx *sqlx.Tx, deviceID uuid.UUID) (
 	var err error
 
 	args := struct {
-		deviceID uuid.UUID `db:"device_id" sql:",type:uuid"`
+		DeviceID string `db:"device_id" sql:",type:uuid"`
 	}{
-		deviceID: deviceID,
+		DeviceID: deviceID.String(),
 	}
 
 	if tx == nil {

@@ -1,13 +1,14 @@
 package deviceservice
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -23,6 +24,8 @@ import (
 )
 
 const defaultLimit = 20
+
+var re = regexp.MustCompile(`^wg\d+$`)
 
 type DeviceService struct {
 	logger     *zap.Logger
@@ -40,7 +43,6 @@ func NewDeviceService(logger *zap.Logger, ctrl app.WgCtrl, deviceRepo app.Device
 	}
 }
 
-//nolint:gocognit
 func (ds *DeviceService) SyncDevices(ctx context.Context) error {
 	devices, err := ds.deviceRepo.GetAll(ctx, nil, 0, 0, "")
 	if err != nil {
@@ -48,43 +50,37 @@ func (ds *DeviceService) SyncDevices(ctx context.Context) error {
 	}
 
 	for _, device := range devices {
-		if err := ds.setupDevice(device); err != nil {
-			return fmt.Errorf("device service: %w", err)
+		if matched := re.MatchString(device.Name); !matched {
+			return fmt.Errorf("sync devices: %w", ErrInvalidDeviceData)
+		}
+
+		//nolint:gosec
+		if err := exec.Command("wg-quick", "down", device.Name).Run(); err != nil {
+			ds.logger.Error("sync devices", zap.Error(err))
+		}
+
+		if err := ds.setupDevice(device, false); err != nil {
+			return fmt.Errorf("sync devices: %w", err)
 		}
 
 		peers, err := ds.peerRepo.GetAll(ctx, nil, 0, 0, "", device.ID)
 		if err != nil {
-			return fmt.Errorf("device service: %w", err)
-		}
-
-		wgPeers, err := ds.GetConfiguredPeers(device.Name)
-		if err != nil {
-			return fmt.Errorf("device service: %w", err)
+			return fmt.Errorf("sync devices: %w", err)
 		}
 
 		// sync peers with wg
 		for _, peer := range peers {
 			if errors := peer.IsValid(); len(errors) > 0 {
-				return common.NewErrInvalidData(fmt.Errorf("device service: invalid peer data"), errors)
+				return common.NewErrInvalidData(fmt.Errorf("sync devices: invalid peer data"), errors)
 			}
 
-			peerInSync := false
-			for _, wgPeer := range wgPeers {
-				if peer.PublicKey == wgPeer.PublicKey {
-					peerInSync = true
-					break
-				}
+			peerConfig, err := peer.ToPeerConfig(device)
+			if err != nil {
+				return fmt.Errorf("sync devices: %w", err)
 			}
 
-			if !peerInSync {
-				peerConfig, err := peer.ToPeerConfig()
-				if err != nil {
-					return fmt.Errorf("device service: %w", err)
-				}
-
-				if err := ds.ConfigureDevice(device.Name, *peerConfig); err != nil {
-					return fmt.Errorf("device service: %w", err)
-				}
+			if err := ds.ConfigureDevice(device.Name, *peerConfig); err != nil {
+				return fmt.Errorf("sync devices: %w", err)
 			}
 		}
 	}
@@ -92,43 +88,59 @@ func (ds *DeviceService) SyncDevices(ctx context.Context) error {
 	return nil
 }
 
-func (ds *DeviceService) restartDevice(devName string) error {
-	//nolint:staticcheck
-	if err := exec.Command("wg-quick", "down", devName).Run(); err != nil {
-		// ignore
-	}
-
-	return exec.Command("wg-quick", "up", devName).Run()
-}
-
-func (ds *DeviceService) setupDevice(dev *entity.Device) error {
+func (ds *DeviceService) setupDevice(dev *entity.Device, update bool) error {
 	filename := fmt.Sprintf("/etc/wireguard/%s.conf", dev.Name)
 
-	t, err := template.New("config").Parse(tmpl.ServerConfigTemplate)
-	if err != nil {
-		return fmt.Errorf("device service: %w", err)
-	}
-
-	privateKey, err := exec.Command("wg", "genkey").Output()
+	t, err := template.New("config").Funcs(
+		template.FuncMap{
+			"StringsJoin": strings.Join,
+		},
+	).Parse(tmpl.ConfigTemplate)
 	if err != nil {
 		return fmt.Errorf("device service: %w", err)
 	}
 
 	port := strings.Split(dev.Endpoint, ":")[1]
 
-	tmplData := tmpl.ServerConfigTmplData{
-		InterfacePrivateKey:          string(privateKey),
-		InterfaceAddress:             dev.Address,
-		InterfacePort:                port,
-		InterfaceMTU:                 dev.MTU,
-		InterfaceTable:               dev.Table,
-		InterfaceDNS:                 dev.DNS,
-		InterfaceFwMark:              dev.FirewallMark,
-		InterfacePreUp:               dev.PreUp,
-		InterfacePostUp:              dev.PostUp,
-		InterfacePreDown:             dev.PreDown,
-		InterfacePostDown:            dev.PostDown,
-		InterfacePersistentKeepAlive: int(dev.PersistentKeepAlive) / (1000 * 1000),
+	tmplData := tmpl.ConfigTmplData{
+		InterfacePrivateKey: dev.PrivateKey.String(),
+		InterfaceAddress:    []string{dev.Address},
+		InterfacePort:       port,
+		InterfaceMTU:        dev.MTU,
+		InterfaceTable:      dev.Table,
+		InterfaceDNS:        dev.DNS,
+		InterfaceFwMark:     dev.FirewallMark,
+		InterfacePreUp:      dev.PreUp,
+		InterfacePostUp:     dev.PostUp,
+		InterfacePreDown:    dev.PreDown,
+		InterfacePostDown:   dev.PostDown,
+		SaveConfig:          true,
+	}
+
+	if update {
+		wgpeers, err := ds.GetConfiguredPeers(dev.Name)
+		if err != nil {
+			return fmt.Errorf("setup: %w", err)
+		}
+
+		for _, wgpeer := range wgpeers {
+			tmplData.InterfacePeers = append(tmplData.InterfacePeers, tmpl.PeerConfigTmplData{
+				PeerPublicKey:           wgpeer.PublicKey.String(),
+				PeerPresharedKey:        wgpeer.PresharedKey.String(),
+				PeerEndpoint:            wgpeer.Endpoint.String(),
+				PeerAllowedIPs:          stringifyAllowedIPs(wgpeer.AllowedIPs),
+				PeerPersistentKeepalive: int(wgpeer.PersistentKeepaliveInterval) / (1000 * 1000 * 1000),
+			})
+		}
+
+		if matched := re.MatchString(dev.Name); !matched {
+			return fmt.Errorf("setup: %w", ErrInvalidDeviceData)
+		}
+
+		//nolint:gosec
+		if err := exec.Command("wg-quick", "down", dev.Name).Run(); err != nil {
+			ds.logger.Error("setup", zap.Error(err))
+		}
 	}
 
 	var buf bytes.Buffer
@@ -137,35 +149,16 @@ func (ds *DeviceService) setupDevice(dev *entity.Device) error {
 		return fmt.Errorf("setup: %w", err)
 	}
 
-	if b, err := ioutil.ReadFile(filename); err == nil {
-		scanner := bufio.NewScanner(bytes.NewReader(b))
-
-		writeLine := false
-
-		for scanner.Scan() {
-			l := scanner.Text()
-
-			if l == "[Peer]" {
-				writeLine = true
-			}
-
-			if writeLine {
-				buf.WriteString(l)
-			}
-		}
-	} else {
-		return fmt.Errorf("device service: %w", err)
-	}
-
 	if err := ioutil.WriteFile(filename, buf.Bytes(), 0o600); err != nil {
-		return fmt.Errorf("device service: %w", err)
+		return fmt.Errorf("setup: %w", err)
 	}
 
-	if err := ds.restartDevice(dev.Name); err != nil {
-		return err
+	if matched := re.MatchString(dev.Name); !matched {
+		return fmt.Errorf("sync devices: %w", ErrInvalidDeviceData)
 	}
 
-	return nil
+	//nolint:gosec
+	return exec.Command("wg-quick", "up", dev.Name).Run()
 }
 
 func (ds *DeviceService) Add(ctx context.Context, dto dt.AddDeviceDTO) (*entity.Device, error) {
@@ -191,6 +184,15 @@ func (ds *DeviceService) Add(ctx context.Context, dto dt.AddDeviceDTO) (*entity.
 		PreDown:             dto.PreDown,
 	}
 
+	if dev.DNS == "" {
+		dev.DNS = "9.9.9.9, 149.112.112.112"
+	}
+
+	if dev.MTU == 0 {
+		// https://gist.github.com/nitred/f16850ca48c48c79bf422e90ee5b9d95
+		dev.MTU = 1420
+	}
+
 	if errors := dev.IsValid(); len(errors) > 0 {
 		return nil, common.NewErrInvalidData(fmt.Errorf("device service: %w", ErrInvalidDeviceData), errors)
 	}
@@ -200,11 +202,7 @@ func (ds *DeviceService) Add(ctx context.Context, dto dt.AddDeviceDTO) (*entity.
 		return nil, fmt.Errorf("device service: %w", err)
 	}
 
-	if err := ds.setupDevice(dev); err != nil {
-		return nil, fmt.Errorf("device service: %w", err)
-	}
-
-	if err := ds.restartDevice(dev.Name); err != nil {
+	if err := ds.setupDevice(dev, false); err != nil {
 		return nil, fmt.Errorf("device service: %w", err)
 	}
 
@@ -224,15 +222,20 @@ func (ds *DeviceService) Update(ctx context.Context, dto dt.UpdateDeviceDTO, mas
 
 	fieldmask_utils.StructToStruct(mask, dto, dev)
 
+	if dev.DNS == "" {
+		dev.DNS = "9.9.9.9, 149.112.112.112"
+	}
+
+	if dev.MTU == 0 {
+		// https://gist.github.com/nitred/f16850ca48c48c79bf422e90ee5b9d95
+		dev.MTU = 1420
+	}
+
 	if errors := dev.IsValid(); len(errors) > 0 {
 		return nil, common.NewErrInvalidData(fmt.Errorf("device service: %w", ErrInvalidDeviceData), errors)
 	}
 
-	if err := ds.setupDevice(dev); err != nil {
-		return nil, fmt.Errorf("device service: %w", err)
-	}
-
-	if err := ds.restartDevice(dev.Name); err != nil {
+	if err := ds.setupDevice(dev, true); err != nil {
 		return nil, fmt.Errorf("device service: %w", err)
 	}
 
@@ -311,6 +314,7 @@ func (ds *DeviceService) GetAll(ctx context.Context, dto dt.GetDevicesRequestDTO
 		wgdev, err := ds.ctrl.Device(dev.Name)
 		if err != nil {
 			ds.logger.Error("failed to get device", zap.Error(err))
+			continue
 		}
 
 		if devices[i], err = dev.PopulateDynamicFields(wgdev); err != nil {
@@ -356,4 +360,14 @@ func (ds *DeviceService) GetConfiguredPeers(dev string) ([]wgtypes.Peer, error) 
 	}
 
 	return device.Peers, nil
+}
+
+func stringifyAllowedIPs(allowedIPs []net.IPNet) []string {
+	res := make([]string, 0, len(allowedIPs))
+
+	for _, allowedIP := range allowedIPs {
+		res = append(res, allowedIP.String())
+	}
+
+	return res
 }
