@@ -26,6 +26,7 @@ EXPOSE 51820/udp
 EXPOSE 3000/tcp
 EXPOSE 4000
 
+COPY migrations "/migrations/"
 COPY --from=build "/opt/wg-grpc-api" "/opt/wg-grpc-api"
 COPY --from=build "/go/bin/dlv" "/opt/dlv"
 

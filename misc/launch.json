@@ -14,7 +14,6 @@
                 "WG_GRPC_API_CACERT": "./test_certs/ca-cert.pem",
                 "WG_GRPC_API_CERT": "./test_certs/server-cert.pem",
                 "WG_GRPC_API_KEY": "./test_certs/server-key.pem",
-                "WG_GRPC_API_ADDRESS": "10.6.0.1/24",
                 "WG_GRPC_API_HOST": "localhost",
                 "WG_GRPC_API_PORT": "3000",
                 "WG_GRPC_API_SWAGGER": "true",

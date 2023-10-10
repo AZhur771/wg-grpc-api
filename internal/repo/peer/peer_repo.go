@@ -238,7 +238,8 @@ func (p *PeerRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, sea
 				WHERE true
 				###device_id###
 				###search###
-				OFFSET :skip LIMIT :limit
+				###offset###
+				###limit###
 			) t
 		JOIN peer_address pa
 		ON 	 t.id = pa.peer_id;
@@ -248,6 +249,18 @@ func (p *PeerRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, sea
 		query = strings.Replace(query, "###device_id###", "AND device_id = :device_id", 1)
 	} else {
 		query = strings.Replace(query, "###device_id###", "", 1)
+	}
+
+	if skip != 0 {
+		query = strings.Replace(query, "###offset###", "OFFSET :skip", 1)
+	} else {
+		query = strings.Replace(query, "###offset###", "", 1)
+	}
+
+	if limit != 0 {
+		query = strings.Replace(query, "###limit###", "LIMIT :limit", 1)
+	} else {
+		query = strings.Replace(query, "###limit###", "", 1)
 	}
 
 	if search != "" {

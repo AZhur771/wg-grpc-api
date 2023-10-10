@@ -204,13 +204,18 @@ func (d *DeviceRepo) GetAll(ctx context.Context, tx *sqlx.Tx, skip, limit int, s
 	`
 
 	if search != "" {
-		query += `
-			WHERE "name" ILIKE '%' || :search || '%'
-				OR description ILIKE '%' || :search || '%'
-		`
+		query += "\nWHERE \"name\" ILIKE '%' || :search || '%' OR description ILIKE '%' || :search || '%'"
 	}
 
-	query += "OFFSET :skip LIMIT :limit;"
+	if skip != 0 {
+		query += "\nOFFSET :skip"
+	}
+
+	if limit != 0 {
+		query += "\nLIMIT :limit"
+	}
+
+	query += ";"
 
 	var rows *sqlx.Rows
 	var err error

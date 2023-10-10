@@ -13,6 +13,11 @@ services:
       - POSTGRES_DB=wg
     networks:
       - postgres
+    healthcheck:
+      test: "pg_isready --username=postgres && psql --username=postgres --list"
+      timeout: 10s
+      retries: 20
+    restart: unless-stopped
 
   pgadmin:
     links:
@@ -30,6 +35,7 @@ services:
       - postgres
     depends_on:
       - postgres
+    restart: unless-stopped
 
   wireguard:
     build:
@@ -40,25 +46,31 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     environment:
-      - WG_GRPC_API_ADDRESS: 10.6.0.1/24
-      - WG_GRPC_API_HOST": "127.0.0.1"
-      - WG_GRPC_API_PORT": "3000"
-      - WG_GRPC_API_SWAGGER": "true"
-      - WG_GRPC_API_TOKENS": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTY4OTc4NTEwNSwiZXhwIjoxNjg5Nzg4NzA1fQ.lQWZuJVDmz1dUoYz8Y1PdKZxL4pJpIbHCf4Etfm4hx4"
-      - WG_GRPC_API_DB_HOST": "postgres"
-      - WG_GRPC_API_DB_PORT": "5432"
-      - WG_GRPC_API_DB_NAME": "wg"
-      - WG_GRPC_API_DB_USERNAME": "postgres"
-      - WG_GRPC_API_DB_PASSWORD": "postgres"
+      - WG_GRPC_API_HOST=0.0.0.0
+      - WG_GRPC_API_PORT=3000
+      - WG_GRPC_API_SWAGGER=true
+      - WG_GRPC_API_TOKENS=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTY4OTc4NTEwNSwiZXhwIjoxNjg5Nzg4NzA1fQ.lQWZuJVDmz1dUoYz8Y1PdKZxL4pJpIbHCf4Etfm4hx4
+      - WG_GRPC_API_DB_HOST=postgres
+      - WG_GRPC_API_DB_PORT=5432
+      - WG_GRPC_API_DB_NAME=wg
+      - WG_GRPC_API_DB_USERNAME=postgres
+      - WG_GRPC_API_DB_PASSWORD=postgres
     networks:
       - postgres
     ports:
       - 51820:51820/udp
       - 127.0.0.1:3000:3000/tcp
+    depends_on:
+      postgres:
+        condition: service_healthy
     sysctls:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
       - net.ipv6.conf.all.forwarding=1
+
+networks:
+  postgres:
+    driver: bridge
 
 volumes:
   pgdata:

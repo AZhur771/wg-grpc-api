@@ -15,9 +15,9 @@ RUN CGO_ENABLED=0 go build \
         -ldflags "$LDFLAGS" \
         -o /opt/wg-grpc-api .
 
-FROM alpine:3.9
+FROM alpine:3.18.3
 
-ENV BIN_FILE "/opt/wg-grpc-api"
-COPY --from=build ${BIN_FILE} ${BIN_FILE}
+COPY migrations "/migrations/"
+COPY --from=build "/opt/wg-grpc-api" "/opt/wg-grpc-api"
 
-CMD ${BIN_FILE}
+CMD "/opt/wg-grpc-api"

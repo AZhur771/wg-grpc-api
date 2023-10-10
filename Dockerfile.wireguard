@@ -22,6 +22,7 @@ RUN apk add -U --no-cache \
   wireguard-tools \
   dumb-init
 
+COPY migrations "/migrations/"
 COPY --from=build "/opt/wg-grpc-api" "/opt/wg-grpc-api"
 
 CMD ["/usr/bin/dumb-init", "/opt/wg-grpc-api"]
