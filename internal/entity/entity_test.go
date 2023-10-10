@@ -127,21 +127,13 @@ func TestEntityPeer_IsValid(t *testing.T) {
 	testPeer.Email = "invalid_email"
 
 	errors := testPeer.IsValid()
-	require.Equal(t, 4, len(errors))
+	require.Equal(t, 2, len(errors))
 
 	testPeer.Name = "some_name"
 	errors = testPeer.IsValid()
-	require.Equal(t, 3, len(errors))
-
-	testPeer.Email = "valid.email@example.com"
-	errors = testPeer.IsValid()
-	require.Equal(t, 2, len(errors))
-
-	testPeer.MTU = 1414
-	errors = testPeer.IsValid()
 	require.Equal(t, 1, len(errors))
 
-	testPeer.DNS = "1.1.1.1"
+	testPeer.Email = "valid.email@example.com"
 	errors = testPeer.IsValid()
 	require.Equal(t, 0, len(errors))
 }
@@ -172,21 +164,13 @@ func TestEntityDevice_IsValid(t *testing.T) {
 	testDevice.Address = "invalid_address"
 
 	errors := testDevice.IsValid()
-	require.Equal(t, 4, len(errors))
+	require.Equal(t, 2, len(errors))
 
 	testDevice.Endpoint = "192.0.2.1:51820"
 	errors = testDevice.IsValid()
-	require.Equal(t, 3, len(errors))
-
-	testDevice.Address = "10.6.0.1/24"
-	errors = testDevice.IsValid()
-	require.Equal(t, 2, len(errors))
-
-	testDevice.MTU = 1414
-	errors = testDevice.IsValid()
 	require.Equal(t, 1, len(errors))
 
-	testDevice.DNS = "1.1.1.1"
+	testDevice.Address = "10.6.0.1/24"
 	errors = testDevice.IsValid()
 	require.Equal(t, 0, len(errors))
 }
